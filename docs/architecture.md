@@ -94,6 +94,25 @@ GBrain call — runs unprivileged. The `chown` is deliberately non-fatal so a
 read-only mount surfaces the clearer "not writable" diagnostic from the boot
 script rather than a bare `chown` error.
 
+### Clearing the PGLite lock on every boot
+
+PGLite is strictly single-writer and guards its data directory with a lock file
+recording the holder's PID. GBrain deliberately never reaps a lock whose PID is
+still alive — stealing it from a live, slow writer corrupts the store.
+
+That check is correct on a normal host and wrong across a container restart. The
+new container gets a fresh PID namespace, so the dead holder's PID — typically a
+low number like 7 — is very likely alive again as something unrelated. The lock
+then looks permanently held, and both the migration pass and the server fail to
+open the brain. On Railway, where every redeploy restarts the container, the
+service would come up broken on the second deploy.
+
+The boot script removes the lock before touching the brain. Any lock present at
+that point is stale by construction: this container runs exactly one GBrain
+process, and the script runs before it starts. Note this is only the remedy for
+a *stale* lock — GBrain reports a corrupted store as a separate failure, and
+deleting the lock does not fix that one.
+
 ### Embedding provider failure is fatal, on purpose
 
 GBrain fixes the vector column width when the brain is created. A brain created

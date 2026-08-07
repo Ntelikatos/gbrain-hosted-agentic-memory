@@ -204,6 +204,8 @@ Bearer-token CLI clients (Claude Code, Codex, Cursor) are unaffected and work wi
 
 **`expected N dimensions, not M`** — The brain was created with a different embedding provider than the one now configured. `gbrain doctor` prints the exact fix.
 
+**"database is already open through `gbrain serve`" after a redeploy** — a PGLite lock left by the previous container. The boot script clears it automatically on every start; if you see this from a manual CLI command, a server really is running, so use its MCP tools instead or stop it first.
+
 **Brain feels slow on a large sync** — PGLite is single-writer, so a big import contends with the live server. For brains beyond ~50K pages, move to Postgres + pgvector (see below).
 
 ---

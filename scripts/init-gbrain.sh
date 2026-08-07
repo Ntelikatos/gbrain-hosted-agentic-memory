@@ -73,6 +73,24 @@ fi
 # Later boots only run migrations, which is what makes bumping GBRAIN_VERSION
 # in the image a safe, non-destructive operation.
 # ==============================================================================
+# PGLite is strictly single-writer and guards the data directory with a lock
+# recording the holder's PID. GBrain refuses to reap a lock whose PID is still
+# alive — correct on a normal host, wrong across a container restart: the new
+# container gets a fresh PID namespace, so the dead holder's PID (typically a
+# low number like 7) is very likely live again as something unrelated. The lock
+# then looks held forever and BOTH the migration pass and the server fail to
+# open the brain.
+#
+# Any lock present at this point is stale by construction: this container runs
+# exactly one GBrain process, and this script runs before it starts. Removing a
+# lock is the documented remedy for a stale holder — it is explicitly NOT a fix
+# for a corrupted store, which is a different failure GBrain reports separately.
+PGLITE_LOCK="${GBRAIN_DIR}/brain.pglite/.gbrain-lock"
+if [ -e "${PGLITE_LOCK}" ]; then
+    log "Clearing a PGLite lock left by a previous container life..."
+    rm -rf "${PGLITE_LOCK}"
+fi
+
 if [ -f "${GBRAIN_DIR}/config.json" ]; then
     log "Existing brain found. Applying any pending schema migrations..."
     gbrain init --migrate-only --non-interactive \
