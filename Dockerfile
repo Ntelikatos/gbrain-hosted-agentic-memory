@@ -1,7 +1,7 @@
 # ==============================================================================
 # gbrain-hosted-agentic-memory — GBrain MCP server for Railway
 # Base: oven/bun (Debian)
-# PID 1: gbrain serve --http (single process; init runs first via entrypoint)
+# PID 1: tini -> entrypoint -> (init, drop privileges) -> gbrain serve --http
 # ==============================================================================
 
 FROM oven/bun:1-debian
@@ -46,9 +46,10 @@ ENV BUN_INSTALL=/usr/local/bun
 ENV PATH=/usr/local/bun/bin:$PATH
 
 RUN git clone --depth 1 --branch "${GBRAIN_VERSION}" \
-        https://github.com/garrytan/gbrain.git /opt/gbrain \
-    && cd /opt/gbrain \
-    && bun install \
+        https://github.com/garrytan/gbrain.git /opt/gbrain
+
+WORKDIR /opt/gbrain
+RUN bun install \
     && bun link \
     && gbrain --version \
     && rm -rf /root/.bun/install/cache /opt/gbrain/.git
@@ -57,10 +58,15 @@ RUN git clone --depth 1 --branch "${GBRAIN_VERSION}" \
 # `gbrain doctor` output can be matched against the image that produced it.
 ENV GBRAIN_VERSION=${GBRAIN_VERSION}
 
-# ---------- non-root user -----------------------------------------------------
+# ---------- unprivileged user -------------------------------------------------
+# Deliberately NO `USER gbrain` instruction. Railway mounts volumes as root, so
+# a container that starts as a non-root UID cannot write to its own volume.
+# entrypoint.sh starts as root, takes ownership of /data, then drops to this
+# user via setpriv before any GBrain code runs — so the server still runs
+# unprivileged without needing Railway's RAILWAY_RUN_UID=0 workaround.
 RUN useradd -m -u 10001 -s /bin/bash gbrain \
     && mkdir -p /data \
-    && chown gbrain:gbrain /data
+    && chown gbrain:gbrain /data /home/gbrain
 
 # ---------- scripts -----------------------------------------------------------
 COPY scripts/init-gbrain.sh /usr/local/bin/init-gbrain
@@ -74,9 +80,9 @@ RUN chmod +x /usr/local/bin/init-gbrain /usr/local/bin/entrypoint
 # the brain, its config, and its tokens survive redeployment.
 ENV GBRAIN_HOME=/data \
     BRAIN_REPO_PATH=/data/brain \
+    HOME=/home/gbrain \
     PORT=8080
 
-USER gbrain
 WORKDIR /data
 
 EXPOSE 8080

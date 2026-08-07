@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="GBrain hosted agentic memory">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c5cff"/>
+      <stop offset="100%" stop-color="#2ec5b6"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0d1117"/>
+  <g fill="none" stroke="url(#g)" stroke-width="3.5" stroke-linecap="round">
+    <path d="M64 26v22M64 80v22M40 44l16 12M88 44L72 56M40 84l16-12M88 84L72 72"/>
+  </g>
+  <g fill="url(#g)">
+    <circle cx="64" cy="64" r="11"/>
+    <circle cx="64" cy="24" r="7"/>
+    <circle cx="64" cy="104" r="7"/>
+    <circle cx="36" cy="42" r="7"/>
+    <circle cx="92" cy="42" r="7"/>
+    <circle cx="36" cy="86" r="7"/>
+    <circle cx="92" cy="86" r="7"/>
+  </g>
+</svg>

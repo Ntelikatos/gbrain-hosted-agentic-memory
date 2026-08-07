@@ -1,0 +1,116 @@
+name: Docker Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: gbrain-hosted-agentic-memory:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: GBrain binary is installed and reports its version
+        run: |
+          docker run --rm --entrypoint gbrain \
+            gbrain-hosted-agentic-memory:ci --version
+
+      - name: Boot fails loudly without an embedding provider
+        run: |
+          set +e
+          output="$(docker run --rm gbrain-hosted-agentic-memory:ci 2>&1)"
+          status=$?
+          set -e
+          echo "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "::error::Container started without an embedding provider; it must refuse."
+            exit 1
+          fi
+          echo "$output" | grep -q "No embedding provider configured" \
+            || { echo "::error::Missing the expected provider error message."; exit 1; }
+
+      - name: Boot fails loudly without a writable volume
+        run: |
+          # Mount /data read-only to simulate the "volume not attached or
+          # not writable" case, without making the whole rootfs read-only.
+          mkdir -p /tmp/ro-data
+          set +e
+          output="$(docker run --rm \
+            -e OPENAI_API_KEY=sk-ci-placeholder \
+            -v /tmp/ro-data:/data:ro \
+            gbrain-hosted-agentic-memory:ci 2>&1)"
+          status=$?
+          set -e
+          echo "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "::error::Container started with a read-only /data; it must refuse."
+            exit 1
+          fi
+          echo "$output" | grep -q "not writable" \
+            || { echo "::error::Missing the expected volume error message."; exit 1; }
+
+      - name: First boot creates a brain and serves /health
+        run: |
+          docker run -d --name gbrain-ci \
+            -e OPENAI_API_KEY=sk-ci-placeholder \
+            -e PORT=8080 \
+            -p 8080:8080 \
+            -v gbrain-ci-data:/data \
+            gbrain-hosted-agentic-memory:ci
+
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo "healthy after ${i} attempts"
+              break
+            fi
+            sleep 5
+          done
+
+          echo "--- /health ---"
+          curl -fsS http://127.0.0.1:8080/health | tee /tmp/health.json
+          grep -q '"status":"ok"' /tmp/health.json
+
+          echo "--- /mcp must reject unauthenticated calls ---"
+          code="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/mcp)"
+          echo "HTTP ${code}"
+          [ "$code" = "401" ] || { echo "::error::Expected 401, got ${code}"; exit 1; }
+
+          echo "--- a connect token was minted and printed once ---"
+          docker logs gbrain-ci 2>&1 | grep -q "CONNECT YOUR AGENT" \
+            || { echo "::error::No connect block in first-boot logs."; exit 1; }
+
+      - name: Restart is idempotent and does not reprint the token
+        run: |
+          docker restart gbrain-ci
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1 && break
+            sleep 5
+          done
+          count="$(docker logs gbrain-ci 2>&1 | grep -c 'CONNECT YOUR AGENT' || true)"
+          echo "connect block printed ${count} time(s) across both boots"
+          [ "$count" = "1" ] || { echo "::error::Token printed ${count} times; expected exactly 1."; exit 1; }
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker logs gbrain-ci || true
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm -f gbrain-ci || true
+          docker volume rm gbrain-ci-data || true

@@ -1,8 +1,34 @@
 #!/bin/bash
 # ==============================================================================
-# entrypoint.sh — Initialize, then hand the container over to the MCP server.
+# entrypoint.sh — Drop privileges, initialize, then hand the container over to
+# the MCP server.
 # ==============================================================================
 set -euo pipefail
+
+GBRAIN_UID=10001
+DATA_DIR="${GBRAIN_HOME:-/data}"
+
+# ------------------------------------------------------------------------------
+# Privilege drop
+#
+# Railway mounts volumes as root. An image that declares `USER` up front cannot
+# write into that volume at all, and Railway's documented workaround is to set
+# RAILWAY_RUN_UID=0 and run everything as root. Instead: start as root, take
+# ownership of the volume, then drop to the unprivileged `gbrain` user before
+# any GBrain code runs. Same convenience, without serving a public MCP endpoint
+# as root.
+# ------------------------------------------------------------------------------
+if [ "$(id -u)" = "0" ]; then
+    if [ -d "${DATA_DIR}" ] && [ "$(stat -c '%u' "${DATA_DIR}")" != "${GBRAIN_UID}" ]; then
+        echo ">>> Taking ownership of ${DATA_DIR} for uid ${GBRAIN_UID}..."
+        # Non-fatal: a read-only mount fails here, and the clearer
+        # "not writable" diagnostic in init-gbrain.sh should be what the
+        # operator sees rather than a bare chown error.
+        chown -R "${GBRAIN_UID}:${GBRAIN_UID}" "${DATA_DIR}" 2>/dev/null \
+            || echo "!!! WARNING: could not chown ${DATA_DIR}; continuing." >&2
+    fi
+    exec setpriv --reuid="${GBRAIN_UID}" --regid="${GBRAIN_UID}" --init-groups "$0" "$@"
+fi
 
 /usr/local/bin/init-gbrain
 
@@ -22,7 +48,6 @@ if [ -n "${RAILWAY_PUBLIC_DOMAIN:-}" ]; then
     SERVE_ARGS+=(--public-url "https://${RAILWAY_PUBLIC_DOMAIN}")
 fi
 
-# Opt-in: browser-based OAuth clients need the token TTL raised or DCR on.
 if [ -n "${GBRAIN_TOKEN_TTL:-}" ]; then
     SERVE_ARGS+=(--token-ttl "${GBRAIN_TOKEN_TTL}")
 fi

@@ -1,0 +1,28 @@
+name: ShellCheck
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck
+
+      - name: Lint shell scripts
+        run: shellcheck --severity=warning scripts/*.sh
+
+      - name: Scripts are executable
+        run: |
+          for f in scripts/*.sh; do
+            [ -x "$f" ] || { echo "::error file=$f::not executable (chmod +x)"; exit 1; }
+          done
