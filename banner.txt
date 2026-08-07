@@ -1,0 +1,6 @@
+   _____ ____
+  / ____|  _ \                 Hosted Agentic Memory
+ | |  __| |_) |_ __ __ _ _ __  ___
+ | | |_ |  _ <| '__/ _` | | '_ \/ __|    MCP brain layer on Railway
+ | |__| | |_) | | | (_| | | | | \__ \
+  \_____|____/|_|  \__,_|_|_| |_|___/    github.com/garrytan/gbrain
