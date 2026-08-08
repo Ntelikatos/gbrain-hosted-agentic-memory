@@ -1,50 +1,50 @@
 # Deploy and Host GBrain on Railway
 
-GBrain is a Postgres-native knowledge brain that gives AI agents real memory — hybrid search, a self-wiring knowledge graph, and a synthesis layer that returns cited answers instead of a list of pages. Deploy it on Railway and connect Claude Code, Codex, Cursor, or ChatGPT to a brain that remembers everything your agent has ever been told.
+Your AI agent forgets everything the moment the conversation ends. GBrain is the memory it has been missing — a knowledge base your agent can search, write to, and reason over, living at a URL any MCP client can reach.
 
 ## About Hosting GBrain
 
-Coding agents are amnesiac about everything that isn't code. They re-learn your architecture decisions every session, forget what you told them yesterday, and have no idea what was said in last week's meeting. GBrain fixes that by giving your agent a persistent brain it can search, write to, and traverse — exposed over MCP so any client can reach it.
+Most search tools hand back a list of pages and leave the reading to you. GBrain reads them and writes the answer, with citations — and with an honest note about what it doesn't know yet. Every page it stores is wired into a knowledge graph as you go, so questions like "what did we decide about pricing, and who was in the room?" have somewhere to land.
 
-Running it on Railway makes that brain always-on and reachable from every device, instead of tied to a laptop that has to stay awake. This template packages GBrain's HTTP MCP server with an embedded PGLite database, so there is no second service to deploy and no connection string to wire up. The volume, the public domain, and the admin token are all provisioned for you. Add your embedding API key, and a bearer token plus the exact connect command are printed in your deploy logs. One copy-paste and your agent has a memory.
+[GBrain](https://github.com/garrytan/gbrain) was built by Garry Tan to run his own agents, and it is designed to run on your infrastructure: your database, your keys, your notes. This template is the shortest path to that. One Railway service with the database built in — no second service to deploy, no connection string to wire up, and nothing that phones home.
+
+The volume, the public domain, and the admin credentials are provisioned for you. Add an embedding API key, and your deploy logs print the exact command to connect your agent. One copy-paste, and it remembers.
 
 ## Common Use Cases
 
-- **Give your coding agent a memory** — Connect Claude Code or Codex over MCP so it recalls architecture decisions, past debugging sessions, and project context instead of starting cold every time.
-- **A personal knowledge brain that answers** — Capture notes, meetings, and ideas from any device, then ask questions and get a synthesized, cited answer with an honest note on what the brain doesn't know yet.
-- **Shared institutional memory** — Point a whole team's agents at one brain, with scope-gated OAuth clients so each client only reaches what it should.
+- **Give your coding agent real memory** — Claude Code, Codex, or Cursor can recall architecture decisions, past debugging sessions, and project context instead of starting from nothing every session.
+- **Keep a personal brain that answers back** — capture notes, meetings, and half-formed ideas from any device, then ask a question and get a written answer with sources, not a pile of search results.
+- **Share what your team knows** — point everyone's agents at one brain, with scoped access so each client reaches only what it should.
 
 ## Dependencies for GBrain Hosting
 
-- **An embedding provider API key** — OpenAI, ZeroEntropy, or Voyage. Required, and the only value you supply; the brain's vector dimension is fixed at creation time, so the container refuses to start without one.
-
-The volume (mounted at `/data`, holding the brain database, config, and tokens) and the public domain (which GBrain advertises as its OAuth issuer) are both provisioned by this template.
+- **An embedding API key** — OpenAI, ZeroEntropy, or Voyage. This is the only value you provide. The service will not start without one, because a brain built against the wrong provider breaks in confusing ways later.
 
 ### Deployment Dependencies
 
 - [GBrain](https://github.com/garrytan/gbrain) — the knowledge brain and MCP server
-- [Railway Volumes](https://docs.railway.com/reference/volumes) — persistent storage for the brain
-- [Model Context Protocol](https://modelcontextprotocol.io) — the transport AI clients use to reach it
+- [Model Context Protocol](https://modelcontextprotocol.io) — how AI clients talk to it
+- [Railway Volumes](https://docs.railway.com/volumes) — where the brain lives
 
 ### Implementation Details
 
-Connect any MCP client to your hosted brain:
+Connect any MCP client once the service is up:
 
 ```bash
 gbrain connect https://your-app.up.railway.app/mcp \
     --token gbrain_xxx --install
 ```
 
-**What's included out of the box:**
+What you get out of the box:
 
-- **HTTP MCP server** — 30+ operations at `/mcp` with OAuth 2.1 and scoped access
-- **Embedded PGLite database** — Postgres 17 via WASM, no separate database service
-- **Auto-provisioned access** — a bearer token minted on first boot, printed once with a ready-to-paste connect command
-- **Admin dashboard** — live activity, registered clients, and request logs at `/admin`
-- **Hybrid search** — vector plus BM25 keyword plus reciprocal-rank fusion, with a knowledge graph layered on top
-- **Persistent brain** — database, config, and tokens survive redeploys via the Railway volume
-- **Optional GitHub-backed brain repo** — keep your markdown system of record portable and readable locally
-- **Pinned releases** — a known-good GBrain version is baked into the image, so redeploys are reproducible
+- **A brain over MCP** — 30+ tools at `/mcp`, with OAuth 2.1 and scoped access
+- **No database to run** — PGLite (Postgres compiled to WebAssembly) rides along inside the service
+- **Answers, not just results** — hybrid search across vectors, keywords, and a self-building knowledge graph
+- **An admin dashboard** — live activity, connected clients, and request logs at `/admin`
+- **Storage that survives** — the brain, its config, and its tokens persist across redeploys, with Railway backups a click away
+- **A pinned release** — the image ships a known-good GBrain version, so redeploying never changes behavior underneath you
+
+Comfortable at the scale of a personal or small-team brain — roughly tens of thousands of pages. Beyond that, point it at Postgres with pgvector instead; the repo documents how.
 
 ## Why Deploy GBrain on Railway?
 
@@ -54,4 +54,4 @@ By deploying GBrain on Railway, you are one step closer to supporting a complete
 
 ---
 
-<sub>This is a community-maintained deployment template. It is not affiliated with, endorsed by, or officially supported by the GBrain project. GBrain is built by Garry Tan and licensed MIT. All trademarks belong to their respective owners.</sub>
+<sub>A community-maintained deployment template, not affiliated with or officially supported by the GBrain project. GBrain is built by Garry Tan and licensed MIT. All trademarks belong to their respective owners.</sub>
