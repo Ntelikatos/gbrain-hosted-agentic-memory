@@ -57,6 +57,12 @@ If several are set, OpenAI wins. Override the choice with `EMBEDDING_MODEL=<prov
 2. Attach it to your service
 3. Set the **mount path** to `/data`
 
+Or, with the [Railway CLI](https://docs.railway.com/cli), one command from a linked directory — it creates and attaches in one go:
+
+```bash
+railway volume add --mount-path /data
+```
+
 This holds the brain database, your config, and your tokens. **Without it, your entire brain is wiped on every deploy** — the container filesystem is writable, so everything would appear to work right up until your next deploy silently destroyed it. The boot script detects a missing volume (via `RAILWAY_VOLUME_MOUNT_PATH`) and refuses to start rather than let that happen.
 
 Any mount path works — the boot script follows whatever Railway reports — but `/data` is the documented default.

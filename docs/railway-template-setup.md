@@ -5,9 +5,21 @@ turns the README's eight steps into roughly four for anyone who deploys the
 published template: the volume, the public domain, and the admin token all come
 pre-configured instead of being manual setup.
 
-Create the template at
-[railway.com/workspace/templates](https://railway.com/workspace/templates) →
-**New Template**.
+## Steps
+
+1. Go to [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
+2. **Add New** (top right) → choose **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`.
+3. **Variables** tab → add `OPENAI_API_KEY` (leave the value empty) and
+   `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` = `${{secret(64, "abcdef0123456789")}}`.
+4. **Settings** tab → **Public Networking** → enable HTTP on port `8080`.
+5. Right-click the service → **Attach Volume** → mount path `/data`.
+6. Click **Create Template**.
+7. Deploy it once into a throwaway project to check the volume mounts and the
+   brain comes up, then delete that project.
+8. **Publish** from the templates page, and paste the template URL into the
+   README's deploy button.
+
+Details and reasoning for each setting follow.
 
 ## Service source
 
