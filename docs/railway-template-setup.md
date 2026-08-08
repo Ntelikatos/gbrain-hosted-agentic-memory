@@ -57,13 +57,25 @@ deployer sees and an empty field otherwise reads as required:
 | `BRAIN_REPO_URL` | *(empty)* | Optional — leave empty. Git URL of a GitHub repo to mirror your brain's markdown into, so it is readable and portable outside Railway. Empty keeps the brain repo local to the volume. |
 | `GITHUB_TOKEN` | *(empty)* | Optional — leave empty. Fine-grained GitHub PAT with read/write Contents access. Only needed if BRAIN_REPO_URL points at a private repo. |
 
-Empty is safe for all three: Railway injects `VAR=""` rather than omitting the
-variable when a deployer leaves a field blank, and every consumer treats that as
-unset. `BRAIN_REPO_URL` and `GITHUB_TOKEN` are guarded with
-`[ -n "${VAR:-}" ]`, so an empty `GITHUB_TOKEN` in particular never writes a
-credential-less `url.https://oauth2:@github.com/.insteadOf` rewrite into git
-config. `ANTHROPIC_API_KEY` is never read by this repo; GBrain reports
-`NO_ANTHROPIC_API_KEY` identically whether it is empty or absent.
+Empty is safe for all three, on two independent counts.
+
+Railway simply does not create a variable the deployer left blank. Confirmed on
+a real deploy from this template: all seven were declared, three were left
+empty, and the resulting service carried exactly the four that had values. So an
+empty declared variable is optional in practice — it renders a field on the
+deploy page and nothing else.
+
+And even if a blank one *were* injected as `VAR=""`, nothing breaks:
+`BRAIN_REPO_URL` and `GITHUB_TOKEN` are guarded with `[ -n "${VAR:-}" ]`, so an
+empty `GITHUB_TOKEN` never writes a credential-less
+`url.https://oauth2:@github.com/.insteadOf` rewrite into git config;
+`ANTHROPIC_API_KEY` is never read by this repo at all, and GBrain reports
+`NO_ANTHROPIC_API_KEY` identically whether it is empty or absent. Verified by
+booting with all three set to `""`.
+
+The practical consequence: these three cost nothing at runtime. Their only cost
+is a field on the deploy page, which is why the "Optional — leave empty" prefix
+on each description is doing the real work.
 
 Anything else optional should stay *out* of the template. Every declared
 variable is another field between the deployer and a working brain, and the
