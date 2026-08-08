@@ -164,13 +164,19 @@ if [ -e "${PGLITE_LOCK}" ]; then
     rm -rf "${PGLITE_LOCK}"
 fi
 
+# 2>&1 on the gbrain calls below: Railway derives log severity from the stream,
+# and `gbrain init` writes its ordinary chatter -- the migration list, the
+# schema-pack note, the recommended-skills wall -- to stderr. Left alone, a
+# clean first boot renders as ~150 red `error` lines and reads like a crash.
+# Only gbrain's own output is merged; log/warn/die in this script keep their
+# streams, so a real refusal here is still flagged as an error.
 if [ -f "${GBRAIN_DIR}/config.json" ]; then
     log "Existing brain found. Applying any pending schema migrations..."
-    gbrain init --migrate-only --non-interactive \
+    gbrain init --migrate-only --non-interactive 2>&1 \
         || warn "Migration pass reported an error; continuing to serve. Run 'gbrain doctor' to inspect."
 else
     log "No brain found. Creating a PGLite brain at ${GBRAIN_DIR}/brain.pglite..."
-    gbrain init --pglite --non-interactive "${EMBEDDING_ARGS[@]}" \
+    gbrain init --pglite --non-interactive "${EMBEDDING_ARGS[@]}" 2>&1 \
         || die "gbrain init failed. Check that your embedding provider key is valid."
     log "  Brain created."
 fi
