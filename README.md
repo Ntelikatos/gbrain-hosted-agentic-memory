@@ -35,6 +35,8 @@ The service will not start until you complete Steps 2 and 3. That is deliberate:
 
 ### Step 2: Attach a Volume
 
+Check the service first — some template configurations attach one for you, in which case skip to Step 3. Otherwise:
+
 1. Right-click the project canvas > **Add Volume**
 2. Attach it to the service
 3. Set the **mount path** to `/data`
@@ -66,6 +68,8 @@ If several are set, OpenAI wins. Override the choice with `EMBEDDING_MODEL=<prov
 > **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly volume snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain. Two clicks, worth doing now.
 
 ### Step 4: Generate a Public Domain
+
+Again, your deploy may already have one — check **Settings > Networking** first. If not:
 
 1. Service **Settings** > **Networking**
 2. Under **Public Networking**, click **Generate Domain**
