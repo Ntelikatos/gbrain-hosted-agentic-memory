@@ -1,0 +1,10 @@
+# Local scratch
+*.log
+.DS_Store
+
+# Never commit secrets or a local brain
+.env
+.env.*
+!.env.example
+.gbrain/
+data/

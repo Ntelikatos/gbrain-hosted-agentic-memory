@@ -1,0 +1,8 @@
+failure-threshold: warning
+ignored:
+  # Pinning apt package versions across Debian point releases breaks builds
+  # more often than it prevents drift; the base image tag is the pin.
+  - DL3008
+trustedRegistries:
+  - docker.io
+  - ghcr.io

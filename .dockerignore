@@ -1,0 +1,9 @@
+.git
+.github
+docs
+*.md
+LICENSE
+icon.svg
+.hadolint.yaml
+.gitattributes
+.gitignore
