@@ -8,7 +8,7 @@ Most search tools hand back a list of pages and leave the reading to you. GBrain
 
 [GBrain](https://github.com/garrytan/gbrain) was built by Garry Tan to run his own agents, and it is designed to run on your infrastructure: your database, your keys, your notes. This template is the shortest path to that. One Railway service with the database built in — no second service to deploy, no connection string to wire up, and nothing that phones home.
 
-Attach a volume, add an embedding API key, and your deploy logs print the exact command to connect your agent. One copy-paste, and it remembers.
+Pick an embedding model, add your key for it, and your deploy logs print the exact command to connect your agent. One copy-paste, and it remembers.
 
 ## Common Use Cases
 

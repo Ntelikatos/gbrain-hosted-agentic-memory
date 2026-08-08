@@ -1,8 +1,6 @@
 # GBrain Hosted Agentic Memory
 
-<!-- Replace with the published template URL once it exists:
-     https://railway.com/deploy/<code>?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic -->
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/SQ3-sz?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 [![Docker Build](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml)
 [![Lint Dockerfile](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml)
@@ -29,9 +27,7 @@ Give your AI agents a memory that outlives the chat. Deploy [GBrain](https://git
 
 ### Step 1: Deploy the Template
 
-<!-- Replace with the published template URL once it exists:
-     https://railway.com/deploy/<code>?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic -->
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/SQ3-sz?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 Railway builds the service from this repo's Dockerfile. The first build takes a few minutes — it installs GBrain and its PGLite engine.
 
@@ -57,15 +53,27 @@ This holds the brain database, your config, and your tokens. **Without it your e
 
 ### Step 3: Set Your Embedding API Key
 
-In your service **Variables**, add one of these:
+The provider-neutral way — works with any supported provider. In your service **Variables**:
 
-| Variable              | Value          | Model used                        |
-| --------------------- | -------------- | --------------------------------- |
-| `OPENAI_API_KEY`      | `sk-...`       | `openai:text-embedding-3-large`   |
-| `ZEROENTROPY_API_KEY` | `ze-...`       | `zeroentropyai:zembed-1`          |
-| `VOYAGE_API_KEY`      | `pa-...`       | `voyage:voyage-3-large`           |
+| Variable            | Example                            |
+| ------------------- | ---------------------------------- |
+| `EMBEDDING_MODEL`   | `openai:text-embedding-3-large`    |
+| `EMBEDDING_API_KEY` | your key for that provider         |
 
-If several are set, OpenAI wins. Override the choice with `EMBEDDING_MODEL=<provider>:<model>`.
+The provider is read from the part before the colon, and the key is routed to whichever variable GBrain expects for it — `openai`, `zeroentropyai`, `voyage`, `openrouter`, `dashscope`, and `google` are mapped.
+
+Some models to pick from:
+
+| `EMBEDDING_MODEL`               | Dimensions |
+| ------------------------------- | ---------- |
+| `openai:text-embedding-3-large` | 1536       |
+| `zeroentropyai:zembed-1`        | 2560       |
+| `voyage:voyage-3-large`         | 1024       |
+| `google:gemini-embedding-001`   | varies     |
+
+**Shorthand:** set a provider's own variable on its own (`OPENAI_API_KEY`, `ZEROENTROPY_API_KEY`, or `VOYAGE_API_KEY`) and the matching model is chosen for you. Handy, but it only covers those three.
+
+**Local or self-hosted providers** (`ollama`, `llama-server`, `litellm`) don't use a hosted API key — set `EMBEDDING_MODEL` plus whatever that provider needs, and leave `EMBEDDING_API_KEY` unset.
 
 > **The container refuses to start without one.** That's deliberate. GBrain resolves the embedding dimension at brain-creation time, and a brain created with the wrong provider fails later with a confusing `expected N dimensions, not M` on your first import. Failing at boot is the cheaper error.
 
@@ -151,10 +159,11 @@ Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped 
 
 | Variable                       | Required | Default        | Description                                                                 |
 | ------------------------------ | -------- | -------------- | --------------------------------------------------------------------------- |
-| `OPENAI_API_KEY`               | Yes*     | —              | Embeddings. *One of the three provider keys is required.                     |
-| `ZEROENTROPY_API_KEY`          | Yes*     | —              | Alternative embedding provider (GBrain's own default).                       |
-| `VOYAGE_API_KEY`               | Yes*     | —              | Alternative embedding provider.                                              |
-| `EMBEDDING_MODEL`              | No       | auto-detected  | Force a provider, e.g. `openai:text-embedding-3-large`.                      |
+| `OPENAI_API_KEY`               | No       | —              | Shorthand: implies `openai:text-embedding-3-large`.                          |
+| `ZEROENTROPY_API_KEY`          | No       | —              | Shorthand: implies `zeroentropyai:zembed-1`.                                 |
+| `VOYAGE_API_KEY`               | No       | —              | Shorthand: implies `voyage:voyage-3-large`.                                  |
+| `EMBEDDING_MODEL`              | Yes*     | auto-detected  | `<provider>:<model>`. *Required with `EMBEDDING_API_KEY`; optional if you set a provider key directly. |
+| `EMBEDDING_API_KEY`            | Yes*     | —              | Key for the provider named in `EMBEDDING_MODEL`. Routed to that provider's own variable. |
 | `ANTHROPIC_API_KEY`            | No       | —              | Needed for `gbrain think` synthesis and enrichment.                          |
 | `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No       | auto-generated | `/admin` login. Generated on first boot, printed once, and persisted to the volume. Set your own (min 32 chars, `[A-Za-z0-9_-]`) to keep it out of the logs. |
 | `GBRAIN_SKIP_CONNECT_TOKEN`    | No       | off            | Set to `1` to mint no connect token and print nothing. Create clients from `/admin` instead. |

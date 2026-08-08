@@ -1,40 +1,32 @@
 # The Railway template
 
-> **No template is published right now.** The previous one was deleted. The
-> fastest way to recreate it is **Generate Template from Project** against the
-> pre-configured `gbrain-template-source` project, rather than building one from
-> scratch in the composer — that project already has the volume and public domain
-> attached.
+**Published:** <https://railway.com/deploy/SQ3-sz>
 
-The goal: the only thing a deployer sets is their embedding API key.
+Generated from the `gbrain-template-source` project, which carries the service,
+a volume at `/data`, and a public domain on port 8080.
 
-## Recommended: generate from the reference project
+The goal: the only things a deployer sets are `EMBEDDING_MODEL` and
+`EMBEDDING_API_KEY`.
 
-The `gbrain-template-source` project already has the service, a volume mounted at
-`/data`, and a public domain on port 8080.
+## Recreating or rebuilding it
 
-1. Open that project → **Settings** (top right of the canvas).
-2. Scroll to **Generate Template from Project** → **Create Template**.
-3. Confirm the captured settings in the composer. Check that the volume and the
-   public domain came across.
-4. **Create Template**, then **Publish**.
-5. Put the template URL in the README's deploy button (an HTML comment marks the
-   spot).
+From the reference project (keeps the volume and domain without re-entering
+them): open `gbrain-template-source` → **Settings** → **Generate Template from
+Project**, confirm the captured settings, **Create Template**, **Publish**.
 
-## Or build one from scratch
-
-1. [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
-2. **Add New** → **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`, branch `main`.
-3. **Settings** tab → **Public Networking** → HTTP on port `8080`.
-4. Right-click the service → **Attach Volume** → mount path `/data`.
-5. **Create Template**, then **Publish**.
+From scratch: [Templates](https://railway.com/workspace/templates) → **New
+Template** → **Add New** → **GitHub Repo**
+`Ntelikatos/gbrain-hosted-agentic-memory`, branch `main` → **Settings** →
+**Public Networking**, HTTP port `8080` → right-click the service → **Attach
+Volume**, mount path `/data` → **Create Template** → **Publish**.
 
 ## Variables
 
 Deliberately none.
 
-`OPENAI_API_KEY` is the deployer's own secret and cannot be shipped in a
-template. Everything else the container needs it generates for itself: the admin
+The deployer sets `EMBEDDING_MODEL` and `EMBEDDING_API_KEY`. The key is their own
+secret and cannot be shipped in a template; the model is theirs to choose, and
+defaulting it in the template would quietly push everyone onto one vendor. Everything else the container needs it generates for itself: the admin
 dashboard token and the connect token are both created on first boot, printed
 once, and persisted to the volume.
 
@@ -87,40 +79,6 @@ match the URL clients actually hit. Deployers who generate a domain later have
 to redeploy for discovery metadata to be correct.
 
 Use HTTP, not TCP Proxy — this is an HTTPS MCP endpoint, not a raw socket.
-
-## Variables
-
-| Variable | Value | Notes |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | *(empty — deployer fills in)* | Required. The one thing they must supply. |
-| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | `${{secret(64, "abcdef0123456789")}}` | Generated per deploy. |
-
-`${{secret(length, alphabet)}}` is a [template variable
-function](https://docs.railway.com/templates/create#template-variable-functions):
-Railway executes it at deploy time and substitutes the result.
-
-**Pass the alphabet explicitly.** GBrain rejects any admin token containing a
-character outside `[A-Za-z0-9_-]`, and Railway documents `secret()`'s default
-length but not its default alphabet. `secret(64, "abcdef0123456789")` is 64 hex
-characters, which is unambiguously valid and comfortably over GBrain's 32-char
-minimum. A bare `${{secret(32)}}` is a gamble on an undocumented default that
-would fail at boot.
-
-This also means the admin token never appears in a deploy log — the deployer
-reads it from the Variables tab whenever they need `/admin`.
-
-### Optional variables worth listing
-
-Add these with empty values so they show up as recognized knobs:
-
-| Variable | Purpose |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | Enables `gbrain think` synthesis |
-| `GBRAIN_HTTP_CORS_ORIGIN` | Required for browser OAuth clients (ChatGPT, Claude Desktop/Cowork) |
-| `BRAIN_REPO_URL` / `GITHUB_TOKEN` | GitHub-backed brain repo |
-
-Railway has no documented way to attach help text to a variable in the deploy
-form, so the README remains the place that explains them.
 
 ## Publish
 

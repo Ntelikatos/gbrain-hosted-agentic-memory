@@ -63,9 +63,55 @@ chmod 700 "${STATE_DIR}"
 # ==============================================================================
 log "Resolving embedding provider..."
 
+# EMBEDDING_API_KEY is the provider-neutral way in: pair it with
+# EMBEDDING_MODEL ("<provider>:<model>") and the provider's own key variable is
+# derived here. GBrain reads a different variable per provider, so without this
+# the template would have to name one vendor and quietly exclude the rest.
+# The provider-specific variables still work and take precedence when set.
+if [ -n "${EMBEDDING_API_KEY:-}" ]; then
+    if [ -z "${EMBEDDING_MODEL:-}" ]; then
+        die "EMBEDDING_API_KEY is set but EMBEDDING_MODEL is not, so there is no
+    way to tell which provider the key belongs to. Set both, for example:
+
+      EMBEDDING_MODEL=openai:text-embedding-3-large
+      EMBEDDING_API_KEY=sk-...
+
+    Or drop EMBEDDING_API_KEY and set the provider's own variable instead
+    (OPENAI_API_KEY, VOYAGE_API_KEY, ZEROENTROPY_API_KEY, ...)."
+    fi
+
+    EMBEDDING_PROVIDER="${EMBEDDING_MODEL%%:*}"
+    case "${EMBEDDING_PROVIDER}" in
+        openai)             PROVIDER_KEY_VAR="OPENAI_API_KEY" ;;
+        zeroentropyai)      PROVIDER_KEY_VAR="ZEROENTROPY_API_KEY" ;;
+        voyage)             PROVIDER_KEY_VAR="VOYAGE_API_KEY" ;;
+        openrouter)         PROVIDER_KEY_VAR="OPENROUTER_API_KEY" ;;
+        dashscope)          PROVIDER_KEY_VAR="DASHSCOPE_API_KEY" ;;
+        google)             PROVIDER_KEY_VAR="GOOGLE_GENERATIVE_AI_API_KEY" ;;
+        *)
+            die "Don't know which API key variable '${EMBEDDING_PROVIDER}' uses, so
+    EMBEDDING_API_KEY cannot be routed to it.
+
+    Providers this mapping covers:
+      openai  zeroentropyai  voyage  openrouter  dashscope  google
+
+    For anything else (ollama, llama-server, litellm and other local or
+    self-hosted providers), set that provider's own variable directly and
+    leave EMBEDDING_API_KEY unset."
+            ;;
+    esac
+
+    if [ -n "$(eval "printf '%s' \"\${${PROVIDER_KEY_VAR}:-}\"")" ]; then
+        log "  ${PROVIDER_KEY_VAR} is already set; leaving it alone."
+    else
+        export "${PROVIDER_KEY_VAR}=${EMBEDDING_API_KEY}"
+        log "  EMBEDDING_API_KEY -> ${PROVIDER_KEY_VAR} (from ${EMBEDDING_MODEL})"
+    fi
+fi
+
 EMBEDDING_ARGS=()
 if [ -n "${EMBEDDING_MODEL:-}" ]; then
-    log "  Using EMBEDDING_MODEL override: ${EMBEDDING_MODEL}"
+    log "  Using EMBEDDING_MODEL: ${EMBEDDING_MODEL}"
     EMBEDDING_ARGS=(--embedding-model "${EMBEDDING_MODEL}")
 elif [ -n "${OPENAI_API_KEY:-}" ]; then
     log "  Detected OPENAI_API_KEY -> openai:text-embedding-3-large (1536d)"
@@ -77,13 +123,19 @@ elif [ -n "${VOYAGE_API_KEY:-}" ]; then
     log "  Detected VOYAGE_API_KEY -> voyage:voyage-3-large (1024d)"
     EMBEDDING_ARGS=(--embedding-model "voyage:voyage-3-large")
 else
-    die "No embedding provider configured. Add ONE of these Railway variables:
+    die "No embedding provider configured.
 
-      OPENAI_API_KEY=sk-...        (recommended; openai:text-embedding-3-large)
-      ZEROENTROPY_API_KEY=ze-...   (GBrain's own default; zembed-1)
-      VOYAGE_API_KEY=pa-...        (voyage-3-large)
+    The provider-neutral way, which works with any supported provider:
 
-    Or set EMBEDDING_MODEL=<provider>:<model> to pick explicitly.
+      EMBEDDING_MODEL=openai:text-embedding-3-large
+      EMBEDDING_API_KEY=sk-...
+
+    Or set a provider's own variable and let the model default:
+
+      OPENAI_API_KEY=sk-...        -> openai:text-embedding-3-large
+      ZEROENTROPY_API_KEY=ze-...   -> zeroentropyai:zembed-1
+      VOYAGE_API_KEY=pa-...        -> voyage:voyage-3-large
+
     Search cannot work without embeddings, so startup stops here."
 fi
 
