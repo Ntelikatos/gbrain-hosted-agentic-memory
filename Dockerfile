@@ -22,7 +22,14 @@ ENV LANG=en_US.UTF-8 \
 # curl     — HEALTHCHECK
 # jq       — boot script parses `gbrain doctor --json`
 # ca-certs — HTTPS to the embedding provider and GitHub
-RUN apt-get update && apt-get install -y --no-install-recommends \
+#
+# `apt-get upgrade` applies the security updates Debian has published since the
+# base image was last rebuilt. Without it the image inherits whatever was fixed
+# upstream but not yet rolled into `oven/bun:1-debian` — which is exactly how
+# CVE-2026-4878 (libcap2 privilege escalation) reached the scanner. Hadolint
+# warns against this for reproducibility; that trade is made deliberately here,
+# see .hadolint.yaml.
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
         git \
         curl \
         jq \

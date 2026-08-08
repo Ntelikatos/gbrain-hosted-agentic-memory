@@ -56,6 +56,7 @@ jobs:
       # so a red scan is diagnosable from the run itself.
       - name: Summarize findings
         if: always()
+        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: gbrain-hosted-agentic-memory:scan

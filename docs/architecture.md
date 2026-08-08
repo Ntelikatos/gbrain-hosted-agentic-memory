@@ -164,6 +164,27 @@ the build work on networks where `api.github.com` is restricted.
 GBrain is **not** on npm. The npm package of that name is unrelated and shadows
 the real binary on `PATH`.
 
+### Security updates are applied at build time
+
+The build runs `apt-get upgrade` before installing anything. `oven/bun:1-debian`
+is rebuilt on its own cadence, so between rebuilds it carries packages that
+Debian has already fixed — `CVE-2026-4878`, a privilege escalation in
+`libcap2`'s `cap_set_file()`, arrived that way and showed up as the repository's
+only open code-scanning alert.
+
+Hadolint's `DL3005` warns against `apt-get upgrade` because it makes a build
+non-reproducible. That is a real cost, and it is the smaller one: the version
+that matters for behavior is `GBRAIN_VERSION`, which is pinned, and the
+distribution is pinned by the base image tag. What varies is patch level, and
+varying in the direction of *patched* is the point. The rule is ignored in
+`.hadolint.yaml` with that reasoning recorded.
+
+The Trivy workflow is what catches the next one. It scans CRITICAL and HIGH with
+`ignore-unfixed`, so it reports only what an upgrade could actually fix, and it
+runs weekly as well as on push — newly disclosed CVEs surface without anyone
+touching the repo. Its findings are written to the run summary as well as the
+Security tab, so a red scan is readable from the run that produced it.
+
 ### Binding and the OAuth issuer
 
 GBrain binds `127.0.0.1` by default, which on Railway means the edge proxy can

@@ -3,6 +3,12 @@ ignored:
   # Pinning apt package versions across Debian point releases breaks builds
   # more often than it prevents drift; the base image tag is the pin.
   - DL3008
+  # "Do not use apt-get upgrade". The rule protects reproducibility, which is
+  # already handled here: GBRAIN_VERSION pins the application and the base image
+  # tag pins the distribution. What it costs is patching — the base image lags
+  # Debian's security archive, so skipping the upgrade ships known-fixed CVEs
+  # (CVE-2026-4878 in libcap2 being the one that prompted this). Patching wins.
+  - DL3005
 trustedRegistries:
   - docker.io
   - ghcr.io
