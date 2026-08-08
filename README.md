@@ -29,13 +29,35 @@ Give your AI agents a memory that outlives the chat. Deploy [GBrain](https://git
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/SQ3-sz?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
-Railway builds the service from this repo's Dockerfile. The first build takes a few minutes — it installs GBrain and its PGLite engine.
+Railway shows a short form before it creates anything. **`EMBEDDING_API_KEY` is the only field you have to fill in** — the rest arrive prefilled:
 
-The service will not start until you complete Steps 2 and 3. That is deliberate: it refuses to run rather than create a brain that would be silently destroyed. You'll see a clear error in the deploy logs telling you which piece is missing.
+| Field | What to do |
+| ----- | ---------- |
+| `EMBEDDING_API_KEY` | **Paste your key.** Required. See the provider table below. |
+| `EMBEDDING_MODEL` | Defaults to `openai:text-embedding-3-large`. Change it if you use another provider. |
+| `GBRAIN_HTTP_CORS_ORIGIN` | Defaults to `https://claude.ai,https://chatgpt.com`. Leave it. |
+| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | Generated for you. Leave it — you'll read it back from Variables later. |
 
-### Step 2: Attach a Volume
+Then click deploy. The volume and the public domain come with the template, so there is nothing to attach or generate. The first build takes a few minutes — it installs GBrain and its PGLite engine.
 
-Check the service first — some template configurations attach one for you, in which case skip to Step 3. Otherwise:
+**Which key?** The provider is read from the part before the colon in `EMBEDDING_MODEL`, and your key is routed to whichever variable GBrain expects for it:
+
+| `EMBEDDING_MODEL`               | Key you paste                | Dimensions |
+| ------------------------------- | ---------------------------- | ---------- |
+| `openai:text-embedding-3-large` | OpenAI, starts `sk-`         | 1536       |
+| `zeroentropyai:zembed-1`        | ZeroEntropy, starts `ze-`    | 2560       |
+| `voyage:voyage-3-large`         | Voyage, starts `pa-`         | 1024       |
+| `google:gemini-embedding-001`   | Google AI Studio             | varies     |
+
+`openrouter` and `dashscope` are mapped too.
+
+> **Pick before your first ingest.** GBrain resolves the embedding dimension when the brain is created, so switching providers later means re-embedding everything. The container refuses to start without a key rather than build a brain that fails on your first import with a confusing `expected N dimensions, not M`.
+
+**Local or self-hosted providers** (`ollama`, `llama-server`, `litellm`) don't use a hosted API key — set `EMBEDDING_MODEL` plus whatever that provider needs, and clear `EMBEDDING_API_KEY` afterwards in Variables.
+
+### Step 2: Attach a Volume (only if you didn't use the template)
+
+The template attaches one at `/data`. Check the service — if there's a volume, skip to Step 3. Deploying straight from the Dockerfile instead:
 
 1. Right-click the project canvas > **Add Volume**
 2. Attach it to the service
@@ -51,44 +73,16 @@ This holds the brain database, your config, and your tokens. **Without it your e
 
 > **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain.
 
-### Step 3: Set Your Embedding API Key
+### Step 3: Generate a Public Domain (only if you didn't use the template)
 
-The provider-neutral way — works with any supported provider. In your service **Variables**:
-
-| Variable            | Example                            |
-| ------------------- | ---------------------------------- |
-| `EMBEDDING_MODEL`   | `openai:text-embedding-3-large`    |
-| `EMBEDDING_API_KEY` | your key for that provider         |
-
-The provider is read from the part before the colon, and the key is routed to whichever variable GBrain expects for it — `openai`, `zeroentropyai`, `voyage`, `openrouter`, `dashscope`, and `google` are mapped.
-
-Some models to pick from:
-
-| `EMBEDDING_MODEL`               | Dimensions |
-| ------------------------------- | ---------- |
-| `openai:text-embedding-3-large` | 1536       |
-| `zeroentropyai:zembed-1`        | 2560       |
-| `voyage:voyage-3-large`         | 1024       |
-| `google:gemini-embedding-001`   | varies     |
-
-**Shorthand:** set a provider's own variable on its own (`OPENAI_API_KEY`, `ZEROENTROPY_API_KEY`, or `VOYAGE_API_KEY`) and the matching model is chosen for you. Handy, but it only covers those three.
-
-**Local or self-hosted providers** (`ollama`, `llama-server`, `litellm`) don't use a hosted API key — set `EMBEDDING_MODEL` plus whatever that provider needs, and leave `EMBEDDING_API_KEY` unset.
-
-> **The container refuses to start without one.** That's deliberate. GBrain resolves the embedding dimension at brain-creation time, and a brain created with the wrong provider fails later with a confusing `expected N dimensions, not M` on your first import. Failing at boot is the cheaper error.
-
-> **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly volume snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain. Two clicks, worth doing now.
-
-### Step 4: Generate a Public Domain
-
-Again, your deploy may already have one — check **Settings > Networking** first. If not:
+The template ships public networking on port 8080, so a domain exists from the first boot. Check **Settings > Networking**. If there isn't one:
 
 1. Service **Settings** > **Networking**
 2. Under **Public Networking**, click **Generate Domain**
 
 GBrain advertises this URL as its OAuth issuer, and [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) requires it to match the URL clients actually hit — so generate it before the server starts, and redeploy if you added it later.
 
-### Step 5: Grab Your Connect Token
+### Step 4: Grab Your Connect Token
 
 Open the **Deploy Logs**. On the first successful boot you'll see:
 
@@ -100,7 +94,7 @@ Open the **Deploy Logs**. On the first successful boot you'll see:
       --token gbrain_a1b2c3... --install
 ```
 
-The admin dashboard token is printed in the same way, just above it.
+**Your `/admin` password** is the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` the template generated — read it from the service **Variables** tab. It is deliberately *not* printed in the logs when the template sets it. (Deploying from the Dockerfile without that variable? Then the boot script generates one and prints it just above the connect token.)
 
 Copy that command. It is printed **only** on the boot that created it — GBrain hides secrets from non-TTY logs on purpose, and this template prints once rather than on every restart.
 
@@ -112,9 +106,9 @@ gbrain auth create my-laptop
 
 **Don't want a token in the deploy log?** Set `GBRAIN_SKIP_CONNECT_TOKEN=1`. Nothing is minted or printed; log into `/admin` and register clients there instead. GBrain generates token values itself, so there is no way to pre-set one as a Railway variable.
 
-### Step 6: Connect Your Agent
+### Step 5: Connect Your Agent
 
-Install GBrain locally, then run the command from Step 5:
+Install GBrain locally, then run the command from Step 4:
 
 ```bash
 git clone --depth 1 https://github.com/garrytan/gbrain.git ~/gbrain
@@ -128,7 +122,7 @@ gbrain connect https://your-app.up.railway.app/mcp \
 
 > **Do not `npm install -g gbrain`.** The npm package by that name is an unrelated project and will shadow the real binary on your PATH. GBrain is distributed from GitHub only.
 
-### Step 7: Put Something In It
+### Step 6: Put Something In It
 
 ```bash
 gbrain capture "Vitest is our test runner; we moved off Jest in March"
@@ -142,7 +136,7 @@ gbrain search "what did we decide about the test runner?"   # raw pages, no LLM 
 gbrain think  "what did we decide about the test runner?"   # cited answer + gap analysis
 ```
 
-### Step 8: Back the Brain with GitHub (optional)
+### Step 7: Back the Brain with GitHub (optional)
 
 GBrain's system of record is a plain git repo of markdown. By default it lives on the volume. Point it at a GitHub repo to make it portable and readable from your laptop:
 
@@ -221,9 +215,9 @@ unset and you set it yourself.
 
 ## Troubleshooting
 
-**Deploy fails with "No embedding provider configured"** — Add `OPENAI_API_KEY` (or another provider key) in Variables. See Step 2.
+**Deploy fails with "No embedding provider configured"** — `EMBEDDING_API_KEY` is empty. Set it in Variables (with `EMBEDDING_MODEL` naming the provider) and redeploy. See Step 1.
 
-**Deploy fails with "No Railway volume is attached to this service"** — Exactly what it says: without one the brain would be destroyed by your next deploy, so startup stops. Attach one (Step 2) and redeploy.
+**Deploy fails with "No Railway volume is attached to this service"** — Exactly what it says: without one the brain would be destroyed by your next deploy, so startup stops. Attach one (Step 2) and redeploy. The template does this for you, so this points at a direct Dockerfile deploy.
 
 **Deploy fails with "not writable"** — A volume is attached but the container can't write to it. Check the mount path in the volume settings.
 
@@ -233,7 +227,7 @@ unset and you set it yourself.
 
 **Claude Desktop or ChatGPT won't connect** — Set `GBRAIN_HTTP_CORS_ORIGIN`. See the client table above.
 
-**OAuth discovery points at localhost** — `RAILWAY_PUBLIC_DOMAIN` wasn't set when the server started. Generate a domain (Step 4), then redeploy.
+**OAuth discovery points at localhost** — `RAILWAY_PUBLIC_DOMAIN` wasn't set when the server started. Generate a domain (Step 3), then redeploy.
 
 **Search returns nothing after importing** — Embeddings need a valid provider key. Run `gbrain doctor` from a Railway shell; it prints a paste-ready repair command.
 

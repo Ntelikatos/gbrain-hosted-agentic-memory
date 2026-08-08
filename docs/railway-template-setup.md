@@ -2,67 +2,111 @@
 
 **Published:** <https://railway.com/deploy/SQ3-sz>
 
-Generated from the `gbrain-template-source` project, which carries the service,
-a volume at `/data`, and a public domain on port 8080.
+Carries the service, a volume at `/data`, a public domain on port 8080, and the
+four variables below.
 
-The goal: the only things a deployer sets are `EMBEDDING_MODEL` and
-`EMBEDDING_API_KEY`.
+The goal: the deploy page asks for one thing — the embedding API key — and
+everything else is either prefilled or provisioned by the template.
 
-## Recreating or rebuilding it
+## Editing it
 
-From the reference project (keeps the volume and domain without re-entering
-them): open `gbrain-template-source` → **Settings** → **Generate Template from
-Project**, confirm the captured settings, **Create Template**, **Publish**.
+Templates can only be edited in the composer UI; there is no API for it. So the
+variable table below is the source of truth, and the composer has to be brought
+in line with it by hand.
 
-Generation captures the reference project's variables too, so
-`GBRAIN_HTTP_CORS_ORIGIN` has to be set *there* first — and check that
-`EMBEDDING_API_KEY` was not captured along with it, since a template ships its
-variable values to every deployer.
+[Templates](https://railway.com/workspace/templates) → open the template →
+select the **gbrain** service → **Variables** → add each row from the table
+below with its description → **Update Template**. Existing deployments are
+unaffected; new ones pick it up.
 
-From scratch: [Templates](https://railway.com/workspace/templates) → **New
-Template** → **Add New** → **GitHub Repo**
-`Ntelikatos/gbrain-hosted-agentic-memory`, branch `main` → **Settings** →
-**Public Networking**, HTTP port `8080` → **Variables**, add
-`GBRAIN_HTTP_CORS_ORIGIN` = `https://claude.ai,https://chatgpt.com` →
-right-click the service → **Attach Volume**, mount path `/data` → **Create
-Template** → **Publish**.
+## Recreating it from scratch
+
+[Templates](https://railway.com/workspace/templates) → **New Template** → **Add
+New** → **GitHub Repo** `Ntelikatos/gbrain-hosted-agentic-memory`, branch `main`
+→ **Settings** → **Public Networking**, HTTP port `8080` → **Variables**, add
+all four from the table below → right-click the service → **Attach Volume**,
+mount path `/data` → **Create Template** → **Publish**.
+
+⚠️ **Do not use Generate Template from Project.** It captures the reference
+project's variables as *concrete values* — which would ship that project's
+`EMBEDDING_API_KEY` to every deployer, and freeze
+`GBRAIN_ADMIN_BOOTSTRAP_TOKEN` at one resolved value instead of regenerating it
+per deploy. It also captures no descriptions, so nothing is labelled on the
+deploy page. It looks like the convenient path and it is the wrong one.
 
 ## Variables
 
-One:
+Enter all four in the composer's **Variables** tab, each with the description
+shown. Descriptions are not decoration — they are the label the deployer reads
+on the deploy page.
 
-| Name | Value |
-| --- | --- |
-| `GBRAIN_HTTP_CORS_ORIGIN` | `https://claude.ai,https://chatgpt.com` |
+| Name | Value | Description to enter |
+| --- | --- | --- |
+| `EMBEDDING_API_KEY` | *(leave empty)* | Your API key for the provider named in EMBEDDING_MODEL. OpenAI keys start with sk-. Search cannot work without one, so the service will not start until this is set. |
+| `EMBEDDING_MODEL` | `openai:text-embedding-3-large` | Which embedding model builds the search index, as provider:model. Change the provider here if you are not using OpenAI — see the README for the supported list. Pick before your first ingest; changing it later means re-embedding everything. |
+| `GBRAIN_HTTP_CORS_ORIGIN` | `https://claude.ai,https://chatgpt.com` | Browser origins allowed to complete the OAuth handshake. Needed for Claude Desktop and ChatGPT; CLI clients like Claude Code work without it. Add to the list rather than replacing it. |
+| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | `${{secret(64, "abcdef0123456789")}}` | Password for the /admin dashboard. Generated per-deploy — read it from this variable rather than the deploy logs. |
 
-GBrain rejects every cross-origin request to its OAuth endpoints unless origins
-are allowlisted. Bearer-token CLI clients (Claude Code, Codex, Cursor) do not
-care, but Claude Desktop/Cowork and ChatGPT cannot connect at all — and they
-fail *silently*, so a deployer discovers it only when their client refuses to
-finish the handshake. The same two origins are right for essentially everyone,
-and the value is not a secret, so it belongs in the template rather than in the
-troubleshooting section.
+### Why the variables must be declared here
 
-Ship it as a plain value, not a `${{...}}` function. It is an allowlist, so a
-deployer connecting from elsewhere adds their origin; `*` would let any page in
-any browser drive their OAuth endpoints.
+A template variable declared with an **empty value** is what makes Railway
+render a required input field on the template's deploy page, *before* the
+project is created. Railway's own docs describe the deploy flow this way: "A
+ghost service will appear, asking you to configure the template's variables."
 
-The deployer still sets `EMBEDDING_MODEL` and `EMBEDDING_API_KEY` themselves.
-The key is their own secret and cannot be shipped in a template; the model is
-theirs to choose, and defaulting it would quietly push everyone onto one vendor.
-Everything else the container generates for itself: the admin dashboard token
-and the connect token are both created on first boot, printed once, and
-persisted to the volume.
+An earlier version of this doc said "Variables: deliberately none," reasoning
+that a deployer's API key is a secret and cannot be shipped in a template. The
+premise is right and the conclusion was wrong: declaring a variable with an
+empty value ships no value at all. It only tells Railway to ask. Declaring
+nothing does not protect the key — it just means the deployer lands in a
+deployed-but-broken project and has to find the variables by hand, which is
+exactly the failure this template exists to prevent.
 
-An earlier version of this doc suggested shipping
-`GBRAIN_ADMIN_BOOTSTRAP_TOKEN` = `${{secret(64, "abcdef0123456789")}}`. That
-still works and keeps the admin token out of the deploy logs, which is a real
-benefit. But it is optional now, and a template generated from a project would
-capture a *concrete* value rather than the function — which would hand every
-deployer the same admin token. If you add it, type the function into the
-composer by hand and confirm it is stored as `${{secret(...)}}`.
+So: declare all four, and let the *value* column decide what ships. Only
+`EMBEDDING_API_KEY` is left empty, because only it is a secret.
 
-Details and reasoning for each setting follow.
+### Why each one
+
+**`EMBEDDING_API_KEY`** — empty, so the deploy page requires it. This is the one
+manual step, and there is no way around it: it is the deployer's own credential.
+
+**`EMBEDDING_MODEL`** — prefilled with the OpenAI default. This is a change of
+position: the earlier reasoning was that defaulting it would push everyone onto
+one vendor. But the deployer sees the field and can edit it, and the alternative
+is forcing every deployer to know the exact `provider:model` string before they
+can deploy anything. A visible, editable default is a suggestion; an empty
+required field is a quiz. The boot script accepts any supported provider and
+routes the key accordingly.
+
+**`GBRAIN_HTTP_CORS_ORIGIN`** — prefilled. GBrain rejects every cross-origin
+request to its OAuth endpoints unless origins are allowlisted. Bearer-token CLI
+clients (Claude Code, Codex, Cursor) do not care, but Claude Desktop/Cowork and
+ChatGPT cannot connect at all — and they fail *silently*, so a deployer
+discovers it only when the handshake never finishes. Plain value, not a
+`${{...}}` function. Never `*`: that would let any page in any browser drive the
+deployer's OAuth endpoints.
+
+**`GBRAIN_ADMIN_BOOTSTRAP_TOKEN`** — a `secret()` function, so every deploy gets
+its own. Railway's template best practices are explicit here: "For any secrets,
+passwords, keys, etc., use template variable functions to generate them, avoid
+hardcoding default credentials at all costs." It also keeps the admin token out
+of the deploy logs — the boot script only generates and prints one when this is
+unset. 64 hex chars satisfies GBrain's `[A-Za-z0-9_-]{32,}` requirement, which
+the boot script validates before the server starts.
+
+⚠️ Type this one into the composer **by hand** and confirm it is stored as
+`${{secret(...)}}`. A template generated from a live project captures the
+*concrete* value the project resolved it to, which would hand every deployer the
+same admin token.
+
+### Not declared
+
+The connect token. GBrain generates token values itself — `gbrain auth create`
+has no flag to supply one — so it cannot be seeded from a variable. It is minted
+on first boot and printed once. Deployers who would rather not have it in the
+deploy log set `GBRAIN_SKIP_CONNECT_TOKEN=1` and mint clients from `/admin`.
+
+Details and reasoning for the remaining settings follow.
 
 ## Service source
 
