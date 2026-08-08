@@ -6,7 +6,7 @@ GBrain is a Postgres-native knowledge brain that gives AI agents real memory —
 
 Coding agents are amnesiac about everything that isn't code. They re-learn your architecture decisions every session, forget what you told them yesterday, and have no idea what was said in last week's meeting. GBrain fixes that by giving your agent a persistent brain it can search, write to, and traverse — exposed over MCP so any client can reach it.
 
-Running it on Railway makes that brain always-on and reachable from every device, instead of tied to a laptop that has to stay awake. This template packages GBrain's HTTP MCP server with an embedded PGLite database, so there is no second service to deploy and no connection string to wire up. Set one API key, attach a volume, generate a domain — and a bearer token plus the exact connect command are printed in your deploy logs. One copy-paste and your agent has a memory.
+Running it on Railway makes that brain always-on and reachable from every device, instead of tied to a laptop that has to stay awake. This template packages GBrain's HTTP MCP server with an embedded PGLite database, so there is no second service to deploy and no connection string to wire up. The volume, the public domain, and the admin token are all provisioned for you. Add your embedding API key, and a bearer token plus the exact connect command are printed in your deploy logs. One copy-paste and your agent has a memory.
 
 ## Common Use Cases
 
@@ -16,9 +16,9 @@ Running it on Railway makes that brain always-on and reachable from every device
 
 ## Dependencies for GBrain Hosting
 
-- **An embedding provider API key** — OpenAI, ZeroEntropy, or Voyage. Required; the brain's vector dimension is fixed at creation time.
-- **A Railway volume** — mounted at `/data`, holding the brain database, config, and tokens.
-- **A public domain** — GBrain advertises it as its OAuth issuer, so it must exist before clients connect.
+- **An embedding provider API key** — OpenAI, ZeroEntropy, or Voyage. Required, and the only value you supply; the brain's vector dimension is fixed at creation time, so the container refuses to start without one.
+
+The volume (mounted at `/data`, holding the brain database, config, and tokens) and the public domain (which GBrain advertises as its OAuth issuer) are both provisioned by this template.
 
 ### Deployment Dependencies
 

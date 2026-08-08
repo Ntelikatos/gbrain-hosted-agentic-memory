@@ -1,12 +1,6 @@
 # GBrain Hosted Agentic Memory
 
-<!--
-  Once this is published as a Railway template, replace the button URL below
-  with the template's own deploy link, e.g.
-  https://railway.com/deploy/<template-slug>?referralCode=<code>
-  Until then it points at Railway's generic "new project" page.
--->
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 [![Docker Build](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml)
 [![Lint Dockerfile](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml)
@@ -33,13 +27,22 @@ Give your AI agents a memory that outlives the chat. Deploy [GBrain](https://git
 
 ### Step 1: Deploy the Template
 
-Create a project on [railway.com](https://railway.com) and deploy from this GitHub repo.
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
-Railway detects `railway.json` and builds the Dockerfile. The first build takes a few minutes — it installs GBrain and its PGLite engine.
+The template provisions everything the brain needs:
+
+- the service, built from this repo's Dockerfile
+- a **volume mounted at `/data`**, so the brain is persistent from the first boot
+- a **public domain**, so GBrain's OAuth issuer is correct immediately
+- a generated **`GBRAIN_ADMIN_BOOTSTRAP_TOKEN`**, which you'll find in the Variables tab — it never appears in a log
+
+The first build takes a few minutes; it installs GBrain and its PGLite engine.
+
+> Prefer to deploy from the repo yourself, or forked it? See [Deploying from the repo instead](#deploying-from-the-repo-instead) — you'll need to add the volume and domain by hand.
 
 ### Step 2: Set Your Embedding API Key
 
-In your service **Variables**, add one of these:
+The one value the template can't supply. In your service **Variables**, add one of these:
 
 | Variable              | Value          | Model used                        |
 | --------------------- | -------------- | --------------------------------- |
@@ -51,33 +54,9 @@ If several are set, OpenAI wins. Override the choice with `EMBEDDING_MODEL=<prov
 
 > **The container refuses to start without one.** That's deliberate. GBrain resolves the embedding dimension at brain-creation time, and a brain created with the wrong provider fails later with a confusing `expected N dimensions, not M` on your first import. Failing at boot is the cheaper error.
 
-### Step 3: Create and Attach a Volume
+> **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly volume snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain. Two clicks, worth doing now.
 
-1. In the Railway dashboard, right-click the project canvas > **Add Volume**
-2. Attach it to your service
-3. Set the **mount path** to `/data`
-
-Or, with the [Railway CLI](https://docs.railway.com/cli), one command from a linked directory — it creates and attaches in one go:
-
-```bash
-railway volume add --mount-path /data
-```
-
-This holds the brain database, your config, and your tokens. **Without it, your entire brain is wiped on every deploy** — the container filesystem is writable, so everything would appear to work right up until your next deploy silently destroyed it. The boot script detects a missing volume (via `RAILWAY_VOLUME_MOUNT_PATH`) and refuses to start rather than let that happen.
-
-Any mount path works — the boot script follows whatever Railway reports — but `/data` is the documented default.
-
-> **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly volume snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain.
-
-### Step 4: Generate a Public Domain
-
-1. Go to your service **Settings** > **Networking**
-2. Under **Public Networking**, click **Generate Domain**
-3. Railway assigns something like `your-app.up.railway.app`
-
-Redeploy after generating it. GBrain advertises this URL as its OAuth issuer, and [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) requires it to match the URL clients actually hit — so the domain has to exist before the server starts for discovery to be correct.
-
-### Step 5: Grab Your Connect Token
+### Step 3: Grab Your Connect Token
 
 Open the **Deploy Logs**. On the first successful boot you'll see:
 
@@ -99,9 +78,9 @@ gbrain auth create my-laptop
 
 **Don't want a token in the deploy log?** Set `GBRAIN_SKIP_CONNECT_TOKEN=1`. Nothing is minted or printed; log into `/admin` and register clients there instead. GBrain generates token values itself, so there is no way to pre-set one as a Railway variable.
 
-### Step 6: Connect Your Agent
+### Step 4: Connect Your Agent
 
-Install GBrain locally, then run the command from Step 5:
+Install GBrain locally, then run the command from Step 3:
 
 ```bash
 git clone --depth 1 https://github.com/garrytan/gbrain.git ~/gbrain
@@ -115,7 +94,7 @@ gbrain connect https://your-app.up.railway.app/mcp \
 
 > **Do not `npm install -g gbrain`.** The npm package by that name is an unrelated project and will shadow the real binary on your PATH. GBrain is distributed from GitHub only.
 
-### Step 7: Put Something In It
+### Step 5: Put Something In It
 
 ```bash
 gbrain capture "Vitest is our test runner; we moved off Jest in March"
@@ -129,7 +108,7 @@ gbrain search "what did we decide about the test runner?"   # raw pages, no LLM 
 gbrain think  "what did we decide about the test runner?"   # cited answer + gap analysis
 ```
 
-### Step 8: Back the Brain with GitHub (optional)
+### Step 6: Back the Brain with GitHub (optional)
 
 GBrain's system of record is a plain git repo of markdown. By default it lives on the volume. Point it at a GitHub repo to make it portable and readable from your laptop:
 
@@ -139,6 +118,26 @@ GBrain's system of record is a plain git repo of markdown. By default it lives o
 | `GITHUB_TOKEN`   | Fine-grained PAT with **Contents: R/W**   |
 
 Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped to that one repo. The boot script clones on first run and pulls on later boots. The token is injected via `git config url.insteadOf`, so it never lands in `.git/config` or `git remote -v`.
+
+---
+
+## Deploying from the repo instead
+
+The template is the easy path. If you forked this repo, or want to deploy it directly, two things the template does for you become manual.
+
+**Create a project** on [railway.com](https://railway.com) and deploy from the repo. Railway detects `railway.json` and builds the Dockerfile.
+
+**Attach a volume.** Right-click the project canvas → **Add Volume**, attach it to the service, mount path `/data`. Or with the [Railway CLI](https://docs.railway.com/cli), from a linked directory:
+
+```bash
+railway volume add --mount-path /data
+```
+
+Without it your entire brain is wiped on every deploy — the container filesystem is writable, so everything would appear to work right up until the next deploy silently destroyed it. The boot script detects a missing volume via `RAILWAY_VOLUME_MOUNT_PATH` and refuses to start rather than let that happen, so you'll get a clear error rather than a nasty surprise. Any mount path works; `/data` is just the documented default.
+
+**Generate a public domain.** Service **Settings** → **Networking** → **Generate Domain**, then redeploy. GBrain advertises this URL as its OAuth issuer, and [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) requires it to match the URL clients actually hit, so the domain must exist before the server starts for discovery to be correct.
+
+`GBRAIN_ADMIN_BOOTSTRAP_TOKEN` is generated and persisted to the volume automatically if you don't set one; see the variables table below for how to supply your own.
 
 ---
 
@@ -202,7 +201,9 @@ Bearer-token CLI clients (Claude Code, Codex, Cursor) are unaffected and work wi
 
 **Deploy fails with "No embedding provider configured"** — Add `OPENAI_API_KEY` (or another provider key) in Variables. See Step 2.
 
-**Deploy fails with "/data is not writable"** — The volume isn't attached, or its mount path isn't `/data`. See Step 3.
+**Deploy fails with "No Railway volume is attached to this service"** — Exactly what it says: without one the brain would be destroyed by your next deploy, so startup stops. The template attaches a volume for you; if you deployed from the repo, see [Deploying from the repo instead](#deploying-from-the-repo-instead).
+
+**Deploy fails with "not writable"** — A volume is attached but the container can't write to it. Check the mount path in the volume settings.
 
 **Healthcheck failing / service marked unhealthy** — First boot creates the brain and can exceed the default healthcheck window; `railway.json` allows 300s. Check Deploy Logs for the real error.
 
@@ -210,7 +211,7 @@ Bearer-token CLI clients (Claude Code, Codex, Cursor) are unaffected and work wi
 
 **Claude Desktop or ChatGPT won't connect** — Set `GBRAIN_HTTP_CORS_ORIGIN`. See the client table above.
 
-**OAuth discovery points at localhost** — `RAILWAY_PUBLIC_DOMAIN` wasn't set when the server started. Generate a domain (Step 4), then redeploy.
+**OAuth discovery points at localhost** — `RAILWAY_PUBLIC_DOMAIN` wasn't set when the server started. The template generates a domain up front; if you deployed from the repo, generate one and redeploy.
 
 **Search returns nothing after importing** — Embeddings need a valid provider key. Run `gbrain doctor` from a Railway shell; it prints a paste-ready repair command.
 
@@ -252,7 +253,7 @@ Storage is the cheap part. Embedding a 10K-page brain costs a few dollars once.
 
 See [docs/architecture.md](docs/architecture.md) for the boot sequence, the persistence model, and why the container is shaped the way it is.
 
-Publishing this as a Railway template? [docs/railway-template-setup.md](docs/railway-template-setup.md) has the exact composer settings — pre-attaching the volume, enabling public networking, and generating the admin token turn the eight steps above into about four.
+[docs/railway-template-setup.md](docs/railway-template-setup.md) records how the published Railway template is configured — the attached volume, public networking, and generated admin token that make Steps 1 and 2 above all there is to do.
 
 ---
 

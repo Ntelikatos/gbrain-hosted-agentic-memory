@@ -1,11 +1,16 @@
-# Publishing this as a Railway template
+# The Railway template
 
-Settings to enter in Railway's template composer. Configuring these here is what
-turns the README's eight steps into roughly four for anyone who deploys the
-published template: the volume, the public domain, and the admin token all come
-pre-configured instead of being manual setup.
+**Published:** <https://railway.com/deploy/w2yM4N>
 
-## Steps
+Settings entered in Railway's template composer. Configuring these there is what
+turns six README steps into four for anyone who deploys the template: the
+volume, the public domain, and the admin token all come pre-configured instead
+of being manual setup.
+
+Kept as the record of how the template is configured — useful when editing it,
+recreating it, or working out why a deploy behaved unexpectedly.
+
+## Steps (already done — kept for reference)
 
 1. Go to [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
 2. **Add New** (top right) → choose **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`.
@@ -97,13 +102,17 @@ form, so the README remains the place that explains them.
 
 ## Publish
 
-Workspace → Templates → **Publish**. Then update the README's deploy button,
-replacing the placeholder URL with the template's own (an HTML comment marks the
-spot):
+Workspace → Templates → **Publish**. The README's deploy button now points at the
+published template:
 
 ```md
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/<code>?utm_medium=integration&utm_source=button&utm_campaign=gbrain)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 ```
+
+Editing the template later (to change a variable, or the mount path) is done in
+the same composer; existing deployments are unaffected, but new ones pick the
+change up. If you change anything here, update this file so the two do not
+drift.
 
 ## Deliberately not configured
 
