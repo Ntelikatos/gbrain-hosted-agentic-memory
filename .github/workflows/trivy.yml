@@ -50,3 +50,31 @@ jobs:
         if: always()
         with:
           sarif_file: trivy-results.sarif
+
+      # The SARIF upload is the system of record, but it is only readable from
+      # the Security tab. Repeat the same findings as a table in the run summary
+      # so a red scan is diagnosable from the run itself.
+      - name: Summarize findings
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: gbrain-hosted-agentic-memory:scan
+          format: table
+          output: trivy-results.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+        env:
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
+
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo '## Trivy: CRITICAL/HIGH, fixed only'
+            echo
+            echo '```'
+            cat trivy-results.txt 2>/dev/null || echo "no table produced"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat trivy-results.txt 2>/dev/null || true
