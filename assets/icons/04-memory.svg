@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="GBrain persistent memory store">
-  <g fill="none" stroke="#7C5CFF" stroke-width="4" stroke-linecap="round">
-    <ellipse cx="32" cy="17" rx="19" ry="7"/>
-    <path d="M13 17v30c0 3.9 8.5 7 19 7s19-3.1 19-7V17"/>
-    <path d="M13 32c0 3.9 8.5 7 19 7s19-3.1 19-7"/>
-  </g>
-  <circle cx="32" cy="47" r="5.5" fill="#22D3EE"/>
-</svg>

@@ -1,60 +1,38 @@
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GBrain icon options</title>
+<title>gbrain.svg — size check</title>
 <style>
-  :root { --bg:#ffffff; --fg:#16161a; --muted:#6b6b76; --line:#e6e6ec; --card:#fafafc; }
+  :root { --bg:#fff; --fg:#16161a; --muted:#6b6b76; --line:#e6e6ec; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg:#0d0d11; --fg:#f2f2f5; --muted:#9a9aa6; --line:#26262e; --card:#15151b; }
+    :root:not([data-theme="light"]) { --bg:#0d0d11; --fg:#f2f2f5; --muted:#9a9aa6; --line:#26262e; }
   }
-  :root[data-theme="dark"] { --bg:#0d0d11; --fg:#f2f2f5; --muted:#9a9aa6; --line:#26262e; --card:#15151b; }
+  :root[data-theme="dark"] { --bg:#0d0d11; --fg:#f2f2f5; --muted:#9a9aa6; --line:#26262e; }
   * { box-sizing: border-box; }
   body { margin:0; padding:2rem 1.25rem 4rem; background:var(--bg); color:var(--fg);
-         font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  .wrap { max-width: 940px; margin: 0 auto; }
-  h1 { font-size:1.5rem; margin:0 0 .35rem; letter-spacing:-.02em; }
-  p.lede { color:var(--muted); margin:0 0 2rem; }
-  .row { display:grid; grid-template-columns: 1fr; gap:1rem; align-items:center;
-         padding:1.25rem; border:1px solid var(--line); border-radius:14px;
-         background:var(--card); margin-bottom:1rem; }
-  @media (min-width: 720px) { .row { grid-template-columns: 200px 1fr; } }
-  .meta h2 { font-size:1rem; margin:0 0 .2rem; }
-  .meta .num { color:var(--muted); font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; }
-  .meta p { margin:.4rem 0 0; color:var(--muted); font-size:.85rem; }
-  .sizes { display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-end; }
-  .swatch { display:flex; flex-direction:column; align-items:center; gap:.45rem; }
-  .swatch span { font-size:.7rem; color:var(--muted); }
-  .tile { display:grid; place-items:center; border-radius:10px; padding:10px; }
-  .onlight { background:#ffffff; box-shadow: inset 0 0 0 1px var(--line); }
-  .ondark  { background:#0b0b0f; box-shadow: inset 0 0 0 1px #2a2a33; }
+         font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; }
+  h1 { font-size:1.3rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  p { color:var(--muted); margin:0 0 2rem; font-size:.9rem; max-width:60ch; }
+  .ladder { display:flex; gap:1.5rem; align-items:flex-end; flex-wrap:wrap; }
+  .step { display:flex; flex-direction:column; align-items:center; gap:.45rem; }
+  .chip { display:grid; place-items:center; border-radius:9px; padding:11px; }
+  .light { background:#fff; box-shadow:inset 0 0 0 1px var(--line); }
+  .dark  { background:#13111C; box-shadow:inset 0 0 0 1px rgba(255,255,255,.1); }
+  .px { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        font-size:.68rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .step.target .px { color:#7C5CFF; font-weight:600; }
   img { display:block; }
 </style>
 <div class="wrap">
-  <h1>GBrain icon options</h1>
-  <p class="lede">All 1:1 with transparent backgrounds, per Railway's template guidance. Shown on white and near-black at Railway's real render sizes — 32px is the service icon, so judge there first.</p>
-  <div id="rows"></div>
+  <h1>gbrain.svg</h1>
+  <p>The template and service icon, at the sizes Railway renders it. 32&nbsp;px is the service icon on the project canvas &mdash; judge there. Open this file with <code>gbrain.svg</code> alongside it.</p>
+  <div class="ladder" id="l"></div>
 </div>
 <script>
-const ICONS = [
-  ["01-graph","Graph Cluster","Seven connected nodes. Reads as knowledge graph — the thing that makes GBrain more than a vector store."],
-  ["02-brain","Brain Nodes","Literal brain, split hemispheres, synapse dots. Most instantly readable, busiest at small sizes."],
-  ["03-monogram","G Monogram","A letter G whose terminal is a node. Cleanest at 16px, least descriptive of what it does."],
-  ["04-memory","Memory Store","Database cylinder with a synapse. Says persistent hosted storage, reads generic-database at a glance."],
-  ["05-synapse","Synapse","Two poles, one junction. Most abstract, strongest silhouette."],
-];
-const SIZES = [128, 48, 32, 16];
-document.getElementById("rows").innerHTML = ICONS.map(([f,name,desc],i)=>`
-  <div class="row">
-    <div class="meta">
-      <div class="num">Option ${i+1}</div>
-      <h2>${name}</h2>
-      <p>${desc}</p>
-    </div>
-    <div class="sizes">
-      ${SIZES.map(s=>`
-        <div class="swatch">
-          <div class="tile onlight"><img src="${f}.svg" width="${s}" height="${s}" alt="${name} at ${s}px on light"></div>
-          <div class="tile ondark"><img src="${f}.svg" width="${s}" height="${s}" alt="${name} at ${s}px on dark"></div>
-          <span>${s}px</span>
-        </div>`).join("")}
-    </div>
-  </div>`).join("");
+  document.getElementById("l").innerHTML = [128, 64, 48, 32, 16].map(s => `
+    <div class="step${s === 32 ? " target" : ""}">
+      <div class="chip light"><img src="gbrain.svg" width="${s}" height="${s}" alt="gbrain icon at ${s}px on white"></div>
+      <div class="chip dark"><img src="gbrain.svg" width="${s}" height="${s}" alt="gbrain icon at ${s}px on dark"></div>
+      <span class="px">${s}px</span>
+    </div>`).join("");
 </script>
