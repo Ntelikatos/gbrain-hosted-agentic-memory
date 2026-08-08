@@ -1,6 +1,8 @@
 # GBrain Hosted Agentic Memory
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
+<!-- Replace with the published template URL once it exists:
+     https://railway.com/deploy/<code>?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic -->
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
 
 [![Docker Build](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/docker-build.yml)
 [![Lint Dockerfile](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml/badge.svg)](https://github.com/Ntelikatos/gbrain-hosted-agentic-memory/actions/workflows/lint-dockerfile.yml)
@@ -27,7 +29,9 @@ Give your AI agents a memory that outlives the chat. Deploy [GBrain](https://git
 
 ### Step 1: Deploy the Template
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
+<!-- Replace with the published template URL once it exists:
+     https://railway.com/deploy/<code>?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic -->
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
 
 Railway builds the service from this repo's Dockerfile. The first build takes a few minutes — it installs GBrain and its PGLite engine.
 
@@ -87,6 +91,8 @@ Open the **Deploy Logs**. On the first successful boot you'll see:
   gbrain connect https://your-app.up.railway.app/mcp \
       --token gbrain_a1b2c3... --install
 ```
+
+The admin dashboard token is printed in the same way, just above it.
 
 Copy that command. It is printed **only** on the boot that created it — GBrain hides secrets from non-TTY logs on purpose, and this template prints once rather than on every restart.
 
@@ -150,7 +156,7 @@ Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped 
 | `VOYAGE_API_KEY`               | Yes*     | —              | Alternative embedding provider.                                              |
 | `EMBEDDING_MODEL`              | No       | auto-detected  | Force a provider, e.g. `openai:text-embedding-3-large`.                      |
 | `ANTHROPIC_API_KEY`            | No       | —              | Needed for `gbrain think` synthesis and enrichment.                          |
-| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No       | auto-generated | `/admin` login. Min 32 chars, `[A-Za-z0-9_-]`. Generated and persisted if unset. |
+| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No       | auto-generated | `/admin` login. Generated on first boot, printed once, and persisted to the volume. Set your own (min 32 chars, `[A-Za-z0-9_-]`) to keep it out of the logs. |
 | `GBRAIN_SKIP_CONNECT_TOKEN`    | No       | off            | Set to `1` to mint no connect token and print nothing. Create clients from `/admin` instead. |
 | `GBRAIN_HTTP_CORS_ORIGIN`      | No       | —              | Comma-separated origins. Required for browser OAuth clients — see below.     |
 | `BRAIN_REPO_URL`               | No       | —              | Git URL for a GitHub-backed brain repo.                                      |

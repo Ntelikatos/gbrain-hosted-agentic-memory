@@ -1,33 +1,50 @@
 # The Railway template
 
-**Published:** <https://railway.com/deploy/w2yM4N>
+> **No template is published right now.** The previous one was deleted. The
+> fastest way to recreate it is **Generate Template from Project** against the
+> pre-configured `gbrain-template-source` project, rather than building one from
+> scratch in the composer — that project already has the volume and public domain
+> attached.
 
-> **Current state:** the template deploys the service, but does **not** yet
-> attach a volume, generate a domain, or set variables — verified against a live
-> deploy on 2026-08-08, which stopped at "No Railway volume is attached". Adding
-> the three settings below removes those steps from the README for everyone who
-> deploys it.
+The goal: the only thing a deployer sets is their embedding API key.
 
-Settings to enter in Railway's template composer. Configuring these is what turns
-eight README steps into four: the volume, the public domain, and the admin token
-come pre-configured instead of being manual setup.
+## Recommended: generate from the reference project
 
-## Steps
+The `gbrain-template-source` project already has the service, a volume mounted at
+`/data`, and a public domain on port 8080.
 
-1. Go to [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
-2. **Add New** (top right) → choose **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`.
-3. **Variables** tab → add `OPENAI_API_KEY` (leave the value empty) and
-   `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` = `${{secret(64, "abcdef0123456789")}}`.
-4. **Settings** tab → **Public Networking** → enable HTTP on port `8080`.
-5. Right-click the service → **Attach Volume** → mount path `/data`.
-6. Click **Create Template**.
-7. Deploy it once into a throwaway project to check the volume mounts and the
-   brain comes up, then delete that project.
-8. **Publish** from the templates page.
+1. Open that project → **Settings** (top right of the canvas).
+2. Scroll to **Generate Template from Project** → **Create Template**.
+3. Confirm the captured settings in the composer. Check that the volume and the
+   public domain came across.
+4. **Create Template**, then **Publish**.
+5. Put the template URL in the README's deploy button (an HTML comment marks the
+   spot).
 
-Steps 3 to 5 are the ones currently missing from the published template. Editing
-it in the composer applies them to future deploys; existing projects are
-unaffected.
+## Or build one from scratch
+
+1. [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
+2. **Add New** → **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`, branch `main`.
+3. **Settings** tab → **Public Networking** → HTTP on port `8080`.
+4. Right-click the service → **Attach Volume** → mount path `/data`.
+5. **Create Template**, then **Publish**.
+
+## Variables
+
+Deliberately none.
+
+`OPENAI_API_KEY` is the deployer's own secret and cannot be shipped in a
+template. Everything else the container needs it generates for itself: the admin
+dashboard token and the connect token are both created on first boot, printed
+once, and persisted to the volume.
+
+An earlier version of this doc suggested shipping
+`GBRAIN_ADMIN_BOOTSTRAP_TOKEN` = `${{secret(64, "abcdef0123456789")}}`. That
+still works and keeps the admin token out of the deploy logs, which is a real
+benefit. But it is optional now, and a template generated from a project would
+capture a *concrete* value rather than the function — which would hand every
+deployer the same admin token. If you add it, type the function into the
+composer by hand and confirm it is stored as `${{secret(...)}}`.
 
 Details and reasoning for each setting follow.
 
@@ -107,17 +124,16 @@ form, so the README remains the place that explains them.
 
 ## Publish
 
-Workspace → Templates → **Publish**. The README's deploy button now points at the
-published template:
+Workspace → Templates → **Publish**. Then set the README's deploy button:
 
 ```md
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/w2yM4N?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/<code>?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 ```
 
-Editing the template later (to change a variable, or the mount path) is done in
-the same composer; existing deployments are unaffected, but new ones pick the
-change up. If you change anything here, update this file so the two do not
-drift.
+Templates can only be edited in the composer UI — there is no API for it,
+confirmed with Railway's own agent. Existing deployments are unaffected by an
+edit; new ones pick it up. If you change anything there, update this file so the
+two do not drift.
 
 ## Deliberately not configured
 

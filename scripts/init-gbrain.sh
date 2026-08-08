@@ -180,6 +180,7 @@ git config --global --add safe.directory "${BRAIN_REPO_PATH}" 2>/dev/null || tru
 # stable across restarts.
 # ==============================================================================
 ADMIN_TOKEN_FILE="${STATE_DIR}/admin-bootstrap-token"
+PRINT_ADMIN_TOKEN=0
 
 if [ -n "${GBRAIN_ADMIN_BOOTSTRAP_TOKEN:-}" ]; then
     # GBrain requires >=32 chars matching [A-Za-z0-9_-]+ and rejects anything
@@ -194,6 +195,7 @@ if [ -n "${GBRAIN_ADMIN_BOOTSTRAP_TOKEN:-}" ]; then
 else
     if [ ! -s "${ADMIN_TOKEN_FILE}" ]; then
         log "Admin bootstrap token: generating one and persisting it to the volume."
+        PRINT_ADMIN_TOKEN=1
         gbrain_generate_token() {
             if command -v openssl >/dev/null 2>&1; then
                 openssl rand -hex 32
@@ -289,6 +291,24 @@ else
 fi
 echo "  Admin token  : ${ADMIN_TOKEN_SOURCE} (see README to retrieve it)"
 echo "----------------------------------------------------------------------"
+
+if [ "${PRINT_ADMIN_TOKEN}" = "1" ]; then
+    echo
+    echo "======================================================================"
+    echo "  ADMIN DASHBOARD — this token is shown ONCE, right now."
+    echo "======================================================================"
+    if [ -n "${PUBLIC_URL}" ]; then
+        echo "  ${PUBLIC_URL}/admin"
+    else
+        echo "  <your-domain>/admin"
+    fi
+    echo "  Token: ${GBRAIN_ADMIN_BOOTSTRAP_TOKEN}"
+    echo
+    echo "  Kept on the volume at ${ADMIN_TOKEN_FILE}. To keep it out of the"
+    echo "  logs entirely, set GBRAIN_ADMIN_BOOTSTRAP_TOKEN yourself instead."
+    echo "======================================================================"
+    echo
+fi
 
 if [ "${PRINT_CONNECT_TOKEN}" = "1" ] && [ -n "${CONNECT_TOKEN}" ]; then
     echo
