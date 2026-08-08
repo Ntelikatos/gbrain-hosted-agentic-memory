@@ -78,8 +78,10 @@ RUN chmod +x /usr/local/bin/init-gbrain /usr/local/bin/entrypoint
 # GBRAIN_HOME is a PARENT directory — GBrain appends '.gbrain' itself, so this
 # resolves to /data/.gbrain. Pointing it at the Railway volume is what makes
 # the brain, its config, and its tokens survive redeployment.
+# BRAIN_REPO_PATH is deliberately NOT set here: the boot script derives it from
+# the resolved data directory, so it follows the Railway volume's actual mount
+# path. Set it as a service variable only to override that.
 ENV GBRAIN_HOME=/data \
-    BRAIN_REPO_PATH=/data/brain \
     HOME=/home/gbrain \
     PORT=8080
 

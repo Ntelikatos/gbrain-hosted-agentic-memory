@@ -71,6 +71,26 @@ jobs:
           echo "$output" | grep -q "not writable" \
             || { echo "::error::Missing the expected volume error message."; exit 1; }
 
+      - name: Boot refuses on Railway when no volume is attached
+        run: |
+          # RAILWAY_SERVICE_ID set + RAILWAY_VOLUME_MOUNT_PATH unset is exactly
+          # the "deployed without a volume" case, where the brain would work
+          # and then be destroyed on the next deploy.
+          set +e
+          output="$(docker run --rm \
+            -e OPENAI_API_KEY=sk-ci-placeholder \
+            -e RAILWAY_SERVICE_ID=svc-ci-placeholder \
+            gbrain-hosted-agentic-memory:ci 2>&1)"
+          status=$?
+          set -e
+          echo "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "::error::Container started on Railway with no volume; it must refuse."
+            exit 1
+          fi
+          echo "$output" | grep -q "No Railway volume is attached" \
+            || { echo "::error::Missing the expected missing-volume error message."; exit 1; }
+
       - name: First boot creates a brain and serves /health
         timeout-minutes: 10
         run: |

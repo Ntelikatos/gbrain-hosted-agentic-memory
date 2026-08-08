@@ -6,7 +6,13 @@
 set -euo pipefail
 
 GBRAIN_UID=10001
-DATA_DIR="${GBRAIN_HOME:-/data}"
+
+# Railway sets RAILWAY_VOLUME_MOUNT_PATH when a volume is attached; follow it so
+# ownership is fixed on the directory that actually holds the brain. Exported so
+# init-gbrain.sh and the server agree on one location. init-gbrain.sh resolves
+# this identically, and re-raises a missing volume as a hard error.
+DATA_DIR="${RAILWAY_VOLUME_MOUNT_PATH:-${GBRAIN_HOME:-/data}}"
+export GBRAIN_HOME="${DATA_DIR}"
 
 # ------------------------------------------------------------------------------
 # Privilege drop

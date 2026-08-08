@@ -57,7 +57,11 @@ If several are set, OpenAI wins. Override the choice with `EMBEDDING_MODEL=<prov
 2. Attach it to your service
 3. Set the **mount path** to `/data`
 
-This holds the brain database, your config, and your tokens. **Without it, your entire brain is wiped on every deploy.** The boot script stops with an error if `/data` isn't writable.
+This holds the brain database, your config, and your tokens. **Without it, your entire brain is wiped on every deploy** — the container filesystem is writable, so everything would appear to work right up until your next deploy silently destroyed it. The boot script detects a missing volume (via `RAILWAY_VOLUME_MOUNT_PATH`) and refuses to start rather than let that happen.
+
+Any mount path works — the boot script follows whatever Railway reports — but `/data` is the documented default.
+
+> **Turn on backups.** Service **Settings → Backups** offers daily, weekly, and monthly volume snapshots with one-click restore. PGLite is a single file holding everything you've captured; a scheduled backup is the difference between a bad afternoon and losing the brain.
 
 ### Step 4: Generate a Public Domain
 
@@ -86,6 +90,8 @@ Copy that command. It is printed **only** on the boot that created it — GBrain
 ```bash
 gbrain auth create my-laptop
 ```
+
+**Don't want a token in the deploy log?** Set `GBRAIN_SKIP_CONNECT_TOKEN=1`. Nothing is minted or printed; log into `/admin` and register clients there instead. GBrain generates token values itself, so there is no way to pre-set one as a Railway variable.
 
 ### Step 6: Connect Your Agent
 
@@ -140,7 +146,7 @@ Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped 
 | `EMBEDDING_MODEL`              | No       | auto-detected  | Force a provider, e.g. `openai:text-embedding-3-large`.                      |
 | `ANTHROPIC_API_KEY`            | No       | —              | Needed for `gbrain think` synthesis and enrichment.                          |
 | `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No       | auto-generated | `/admin` login. Min 32 chars, `[A-Za-z0-9_-]`. Generated and persisted if unset. |
-| `GBRAIN_CONNECT_TOKEN`         | No       | auto-minted    | Supply your own bearer. When set, nothing is ever printed to the logs.       |
+| `GBRAIN_SKIP_CONNECT_TOKEN`    | No       | off            | Set to `1` to mint no connect token and print nothing. Create clients from `/admin` instead. |
 | `GBRAIN_HTTP_CORS_ORIGIN`      | No       | —              | Comma-separated origins. Required for browser OAuth clients — see below.     |
 | `BRAIN_REPO_URL`               | No       | —              | Git URL for a GitHub-backed brain repo.                                      |
 | `GITHUB_TOKEN`                 | No       | —              | Fine-grained PAT for `BRAIN_REPO_URL`.                                       |
@@ -239,6 +245,8 @@ Storage is the cheap part. Embedding a 10K-page brain costs a few dollars once.
 ## How It Works
 
 See [docs/architecture.md](docs/architecture.md) for the boot sequence, the persistence model, and why the container is shaped the way it is.
+
+Publishing this as a Railway template? [docs/railway-template-setup.md](docs/railway-template-setup.md) has the exact composer settings — pre-attaching the volume, enabling public networking, and generating the admin token turn the eight steps above into about four.
 
 ---
 

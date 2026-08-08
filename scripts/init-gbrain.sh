@@ -13,20 +13,41 @@ log()  { echo ">>> $*"; }
 warn() { echo "!!! WARNING: $*" >&2; }
 die()  { echo "!!! ERROR: $*" >&2; exit 1; }
 
-DATA_DIR="${GBRAIN_HOME:-/data}"
+# Railway sets RAILWAY_VOLUME_MOUNT_PATH automatically whenever a volume is
+# attached, so it is both the proof that one exists and the authoritative path.
+# Following it means the template works at whatever mount path the operator
+# chose, rather than only at the /data this image defaults to.
+DATA_DIR="${RAILWAY_VOLUME_MOUNT_PATH:-${GBRAIN_HOME:-/data}}"
+export GBRAIN_HOME="${DATA_DIR}"
+
 GBRAIN_DIR="${DATA_DIR}/.gbrain"
 BRAIN_REPO_PATH="${BRAIN_REPO_PATH:-${DATA_DIR}/brain}"
 STATE_DIR="${GBRAIN_DIR}/railway"
 
 # ==============================================================================
-# Step 1: Volume directories
+# Step 1: Volume
 # ==============================================================================
 log "Initializing volume directories under ${DATA_DIR}..."
 
+# A writability check alone cannot catch a missing volume: without one, the
+# container's own filesystem is writable, so the brain would be created, work
+# perfectly, and be silently destroyed on the next deploy. Absence of
+# RAILWAY_VOLUME_MOUNT_PATH while running on Railway is the real signal.
+if [ -z "${RAILWAY_VOLUME_MOUNT_PATH:-}" ] && [ -n "${RAILWAY_SERVICE_ID:-}" ]; then
+    die "No Railway volume is attached to this service.
+
+    The brain would be created on the container filesystem and DESTROYED on your
+    next deploy, with no warning. Attach one before continuing:
+
+      Railway dashboard > right-click the project canvas > Add Volume
+      Attach it to this service, mount path: /data
+
+    Then redeploy."
+fi
+
 if [ ! -w "${DATA_DIR}" ]; then
-    die "${DATA_DIR} is not writable. Attach a Railway volume with mount path ${DATA_DIR}
-    (Railway dashboard > right-click the canvas > Add Volume > mount path ${DATA_DIR}).
-    Without it the brain is rebuilt empty on every deploy."
+    die "${DATA_DIR} exists but is not writable, so the brain cannot be created.
+    If a volume is attached, check its mount path; otherwise see the README."
 fi
 
 mkdir -p "${GBRAIN_DIR}" "${BRAIN_REPO_PATH}" "${STATE_DIR}"
@@ -195,14 +216,18 @@ fi
 # Mint a bearer token on first boot so connecting a client is a single
 # copy-paste. GBrain hides secrets from non-TTY logs on purpose, so this
 # prints ONCE, on the boot that created it, and never again.
+#
+# GBrain generates token values itself (`auth create` has no flag to supply
+# one), so this cannot honor an operator-provided token. Operators who do not
+# want a token in the deploy log set GBRAIN_SKIP_CONNECT_TOKEN=1 and mint
+# clients from the /admin dashboard instead.
 # ==============================================================================
 CONNECT_TOKEN_FILE="${STATE_DIR}/connect-token"
 PRINT_CONNECT_TOKEN=0
 
-if [ -n "${GBRAIN_CONNECT_TOKEN:-}" ]; then
-    # Operator supplied their own; nothing is minted and nothing is printed.
-    log "Connect token: using the value from GBRAIN_CONNECT_TOKEN (nothing printed)."
-    CONNECT_TOKEN="${GBRAIN_CONNECT_TOKEN}"
+if [ "${GBRAIN_SKIP_CONNECT_TOKEN:-}" = "1" ]; then
+    log "Connect token: skipped (GBRAIN_SKIP_CONNECT_TOKEN=1). Mint clients at /admin."
+    CONNECT_TOKEN=""
 elif [ -s "${CONNECT_TOKEN_FILE}" ]; then
     log "Connect token: already provisioned (not reprinted; see README to rotate)."
     CONNECT_TOKEN="$(cat "${CONNECT_TOKEN_FILE}")"

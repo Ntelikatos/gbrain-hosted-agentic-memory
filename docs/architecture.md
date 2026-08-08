@@ -63,8 +63,13 @@ redeploys and container replacements.
 `scripts/init-gbrain.sh` is idempotent — every step is safe to re-run, which is
 what makes redeploys uneventful.
 
-1. **Volume check.** Fails immediately if `/data` isn't writable. A missing
-   volume is otherwise silent until the first redeploy wipes the brain.
+1. **Volume.** Resolves the data directory from `RAILWAY_VOLUME_MOUNT_PATH`
+   (falling back to `GBRAIN_HOME`, then `/data`) and refuses to start when that
+   variable is absent on Railway. A writability check alone cannot catch this:
+   with no volume the container's own filesystem is writable, so the brain would
+   be created, work perfectly, and be destroyed by the next deploy. Following
+   the reported mount path also means the template works wherever the operator
+   attached the volume.
 2. **Embedding provider.** Resolves `EMBEDDING_MODEL`, else the first of
    `OPENAI_API_KEY` / `ZEROENTROPY_API_KEY` / `VOYAGE_API_KEY`. Dies with a
    paste-ready message when none is set.
@@ -113,6 +118,12 @@ process, and the script runs before it starts. Note this is only the remedy for
 a *stale* lock — GBrain reports a corrupted store as a separate failure, and
 deleting the lock does not fix that one.
 
+`railway.json` also sets `drainingSeconds: 30`. Railway's default is `0`, so
+`SIGTERM` is followed immediately by `SIGKILL` and GBrain never gets to release
+the lock or checkpoint cleanly — which is what makes the stale lock the norm
+rather than the exception. The drain window lets shutdown finish properly; the
+lock clearing above stays as the backstop for a hard kill.
+
 ### Embedding provider failure is fatal, on purpose
 
 GBrain fixes the vector column width when the brain is created. A brain created
@@ -125,8 +136,16 @@ boot converts a confusing runtime failure into an obvious deploy failure.
 GBrain deliberately hides generated secrets on non-TTY starts so they never land
 in log storage. On Railway that would mean nobody could ever reach the brain, so
 this template mints a token and prints it — but only on the boot that created
-it, with a rotation hint. Setting `GBRAIN_CONNECT_TOKEN` yourself suppresses
-printing entirely.
+it, with a rotation hint. `GBRAIN_SKIP_CONNECT_TOKEN=1` opts out entirely:
+nothing is minted, nothing is printed, and clients are registered from `/admin`.
+
+GBrain generates token values internally (`auth create` accepts no supplied
+value), so an operator-provided connect token is not possible — the escape hatch
+has to be "mint nothing" rather than "use mine". The published template pairs
+well with this: it generates `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` via Railway's
+`${{secret(...)}}` function, so `/admin` is reachable using a value that only
+ever exists in the Variables tab. See
+[railway-template-setup.md](railway-template-setup.md).
 
 This is the one place the template knowingly trades a little of GBrain's log
 hygiene for first-run usability. Deploy logs are visible to everyone with access
