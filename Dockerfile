@@ -9,8 +9,8 @@ FROM oven/bun:1-debian
 # ---------- build args --------------------------------------------------------
 # Pinned to a known-good GBrain release. GBrain is NOT on npm and ships several
 # releases a week, so tracking master would make every redeploy a coin flip.
-# Override at build time: --build-arg GBRAIN_VERSION=v0.42.74.0
-ARG GBRAIN_VERSION=v0.42.73.2
+# Override at build time: --build-arg GBRAIN_VERSION=v0.42.75.0
+ARG GBRAIN_VERSION=v0.42.74.0
 
 # ---------- locale ------------------------------------------------------------
 ENV LANG=en_US.UTF-8 \

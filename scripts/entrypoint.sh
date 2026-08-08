@@ -65,4 +65,17 @@ echo ">>> Starting: gbrain ${SERVE_ARGS[*]}"
 
 # exec so the server becomes the container's main process and receives
 # SIGTERM directly on redeploy, instead of being killed after a shell.
-exec gbrain "${SERVE_ARGS[@]}"
+#
+# 2>&1 merges the server's stderr into stdout. Railway derives log severity
+# from the stream, and GBrain writes its normal startup banner -- the ASCII
+# box, "Skills: published", the upgrade notice -- to stderr. Left alone, a
+# perfectly healthy boot renders as a wall of red `error` lines and reads
+# like a crash.
+#
+# The trade-off is real: genuine runtime errors from the server lose their
+# severity too. Accepted because a deploy that fails still fails visibly via
+# exit code and the healthcheck, whereas a successful deploy that *looks*
+# failed sends people debugging something that is not broken. Note this
+# applies only to the server: init-gbrain.sh keeps its own stderr, so its
+# warnings and hard refusals are still flagged as errors.
+exec gbrain "${SERVE_ARGS[@]}" 2>&1
