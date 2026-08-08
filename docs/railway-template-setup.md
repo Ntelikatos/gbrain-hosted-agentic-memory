@@ -14,21 +14,45 @@ From the reference project (keeps the volume and domain without re-entering
 them): open `gbrain-template-source` → **Settings** → **Generate Template from
 Project**, confirm the captured settings, **Create Template**, **Publish**.
 
+Generation captures the reference project's variables too, so
+`GBRAIN_HTTP_CORS_ORIGIN` has to be set *there* first — and check that
+`EMBEDDING_API_KEY` was not captured along with it, since a template ships its
+variable values to every deployer.
+
 From scratch: [Templates](https://railway.com/workspace/templates) → **New
 Template** → **Add New** → **GitHub Repo**
 `Ntelikatos/gbrain-hosted-agentic-memory`, branch `main` → **Settings** →
-**Public Networking**, HTTP port `8080` → right-click the service → **Attach
-Volume**, mount path `/data` → **Create Template** → **Publish**.
+**Public Networking**, HTTP port `8080` → **Variables**, add
+`GBRAIN_HTTP_CORS_ORIGIN` = `https://claude.ai,https://chatgpt.com` →
+right-click the service → **Attach Volume**, mount path `/data` → **Create
+Template** → **Publish**.
 
 ## Variables
 
-Deliberately none.
+One:
 
-The deployer sets `EMBEDDING_MODEL` and `EMBEDDING_API_KEY`. The key is their own
-secret and cannot be shipped in a template; the model is theirs to choose, and
-defaulting it in the template would quietly push everyone onto one vendor. Everything else the container needs it generates for itself: the admin
-dashboard token and the connect token are both created on first boot, printed
-once, and persisted to the volume.
+| Name | Value |
+| --- | --- |
+| `GBRAIN_HTTP_CORS_ORIGIN` | `https://claude.ai,https://chatgpt.com` |
+
+GBrain rejects every cross-origin request to its OAuth endpoints unless origins
+are allowlisted. Bearer-token CLI clients (Claude Code, Codex, Cursor) do not
+care, but Claude Desktop/Cowork and ChatGPT cannot connect at all — and they
+fail *silently*, so a deployer discovers it only when their client refuses to
+finish the handshake. The same two origins are right for essentially everyone,
+and the value is not a secret, so it belongs in the template rather than in the
+troubleshooting section.
+
+Ship it as a plain value, not a `${{...}}` function. It is an allowlist, so a
+deployer connecting from elsewhere adds their origin; `*` would let any page in
+any browser drive their OAuth endpoints.
+
+The deployer still sets `EMBEDDING_MODEL` and `EMBEDDING_API_KEY` themselves.
+The key is their own secret and cannot be shipped in a template; the model is
+theirs to choose, and defaulting it would quietly push everyone onto one vendor.
+Everything else the container generates for itself: the admin dashboard token
+and the connect token are both created on first boot, printed once, and
+persisted to the volume.
 
 An earlier version of this doc suggested shipping
 `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` = `${{secret(64, "abcdef0123456789")}}`. That

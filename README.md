@@ -167,7 +167,7 @@ Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped 
 | `ANTHROPIC_API_KEY`            | No       | —              | Needed for `gbrain think` synthesis and enrichment.                          |
 | `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No       | auto-generated | `/admin` login. Generated on first boot, printed once, and persisted to the volume. Set your own (min 32 chars, `[A-Za-z0-9_-]`) to keep it out of the logs. |
 | `GBRAIN_SKIP_CONNECT_TOKEN`    | No       | off            | Set to `1` to mint no connect token and print nothing. Create clients from `/admin` instead. |
-| `GBRAIN_HTTP_CORS_ORIGIN`      | No       | —              | Comma-separated origins. Required for browser OAuth clients — see below.     |
+| `GBRAIN_HTTP_CORS_ORIGIN`      | No       | set by template | Comma-separated origins. The template ships `https://claude.ai,https://chatgpt.com`. Required for browser OAuth clients — see below. |
 | `BRAIN_REPO_URL`               | No       | —              | Git URL for a GitHub-backed brain repo.                                      |
 | `GITHUB_TOKEN`                 | No       | —              | Fine-grained PAT for `BRAIN_REPO_URL`.                                       |
 | `GBRAIN_FTS_LANGUAGE`          | No       | `english`      | Full-text search stemmer, e.g. `portuguese`, `spanish`.                      |
@@ -176,7 +176,7 @@ Use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped 
 | `TZ`                           | No       | `UTC`          | Timezone, e.g. `Europe/Athens`.                                              |
 | `PORT`                         | No       | injected       | Set by Railway. Don't override.                                              |
 
-Build-time: `GBRAIN_VERSION` (default `v0.42.73.2`) pins the GBrain release. Bump it with a Railway build arg or by editing the Dockerfile.
+Build-time: `GBRAIN_VERSION` (default `v0.42.74.0`) pins the GBrain release. Bump it with a Railway build arg or by editing the Dockerfile.
 
 ---
 
@@ -195,7 +195,14 @@ Build-time: `GBRAIN_VERSION` (default `v0.42.73.2`) pins the GBrain release. Bum
 GBRAIN_HTTP_CORS_ORIGIN=https://claude.ai,https://chatgpt.com
 ```
 
-Bearer-token CLI clients (Claude Code, Codex, Cursor) are unaffected and work without it.
+The template sets exactly that, so Claude Desktop and ChatGPT work out of the
+box. Edit the variable if you connect from somewhere else — it is an
+allowlist, so add your origin rather than replacing the list, and don't use
+`*`: it would let any page in any browser drive your OAuth endpoints.
+
+Bearer-token CLI clients (Claude Code, Codex, Cursor) are unaffected and work
+without it. Deploying from the Dockerfile rather than the template? Then it is
+unset and you set it yourself.
 
 ---
 
