@@ -2,15 +2,17 @@
 
 **Published:** <https://railway.com/deploy/w2yM4N>
 
-Settings entered in Railway's template composer. Configuring these there is what
-turns six README steps into four for anyone who deploys the template: the
-volume, the public domain, and the admin token all come pre-configured instead
-of being manual setup.
+> **Current state:** the template deploys the service, but does **not** yet
+> attach a volume, generate a domain, or set variables — verified against a live
+> deploy on 2026-08-08, which stopped at "No Railway volume is attached". Adding
+> the three settings below removes those steps from the README for everyone who
+> deploys it.
 
-Kept as the record of how the template is configured — useful when editing it,
-recreating it, or working out why a deploy behaved unexpectedly.
+Settings to enter in Railway's template composer. Configuring these is what turns
+eight README steps into four: the volume, the public domain, and the admin token
+come pre-configured instead of being manual setup.
 
-## Steps (already done — kept for reference)
+## Steps
 
 1. Go to [railway.com/workspace/templates](https://railway.com/workspace/templates) → **New Template**.
 2. **Add New** (top right) → choose **GitHub Repo** → `Ntelikatos/gbrain-hosted-agentic-memory`.
@@ -21,8 +23,11 @@ recreating it, or working out why a deploy behaved unexpectedly.
 6. Click **Create Template**.
 7. Deploy it once into a throwaway project to check the volume mounts and the
    brain comes up, then delete that project.
-8. **Publish** from the templates page, and paste the template URL into the
-   README's deploy button.
+8. **Publish** from the templates page.
+
+Steps 3 to 5 are the ones currently missing from the published template. Editing
+it in the composer applies them to future deploys; existing projects are
+unaffected.
 
 Details and reasoning for each setting follow.
 
