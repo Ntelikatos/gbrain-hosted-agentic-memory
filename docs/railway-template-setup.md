@@ -47,6 +47,28 @@ on the deploy page.
 | `GBRAIN_HTTP_CORS_ORIGIN` | `https://claude.ai,https://chatgpt.com` | Browser origins allowed to complete the OAuth handshake. Needed for Claude Desktop and ChatGPT; CLI clients like Claude Code work without it. Add to the list rather than replacing it. |
 | `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | `${{secret(64, "abcdef0123456789")}}` | Password for the /admin dashboard. Generated per-deploy — read it from this variable rather than the deploy logs. |
 
+Plus three optional ones, all empty. Each description **must** open with
+"Optional — leave empty", because the description is the only label the
+deployer sees and an empty field otherwise reads as required:
+
+| Name | Value | Description to enter |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | *(empty)* | Optional — leave empty. Lets `gbrain think` write a cited answer instead of returning search results. Memory, search, and the knowledge graph all work without it. |
+| `BRAIN_REPO_URL` | *(empty)* | Optional — leave empty. Git URL of a GitHub repo to mirror your brain's markdown into, so it is readable and portable outside Railway. Empty keeps the brain repo local to the volume. |
+| `GITHUB_TOKEN` | *(empty)* | Optional — leave empty. Fine-grained GitHub PAT with read/write Contents access. Only needed if BRAIN_REPO_URL points at a private repo. |
+
+Empty is safe for all three: Railway injects `VAR=""` rather than omitting the
+variable when a deployer leaves a field blank, and every consumer treats that as
+unset. `BRAIN_REPO_URL` and `GITHUB_TOKEN` are guarded with
+`[ -n "${VAR:-}" ]`, so an empty `GITHUB_TOKEN` in particular never writes a
+credential-less `url.https://oauth2:@github.com/.insteadOf` rewrite into git
+config. `ANTHROPIC_API_KEY` is never read by this repo; GBrain reports
+`NO_ANTHROPIC_API_KEY` identically whether it is empty or absent.
+
+Anything else optional should stay *out* of the template. Every declared
+variable is another field between the deployer and a working brain, and the
+README already documents the full set.
+
 ### Why the variables must be declared here
 
 A template variable declared with an **empty value** is what makes Railway

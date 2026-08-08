@@ -37,6 +37,7 @@ Railway shows a short form before it creates anything. **`EMBEDDING_API_KEY` is 
 | `EMBEDDING_MODEL` | Defaults to `openai:text-embedding-3-large`. Change it if you use another provider. |
 | `GBRAIN_HTTP_CORS_ORIGIN` | Defaults to `https://claude.ai,https://chatgpt.com`. Leave it. |
 | `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | Generated for you. Leave it — you'll read it back from Variables later. |
+| `ANTHROPIC_API_KEY`, `BRAIN_REPO_URL`, `GITHUB_TOKEN` | Optional. Leave empty — they're there for later, and the brain works without all three. |
 
 Then click deploy. The volume and the public domain come with the template, so there is nothing to attach or generate. The first build takes a few minutes — it installs GBrain and its PGLite engine.
 
