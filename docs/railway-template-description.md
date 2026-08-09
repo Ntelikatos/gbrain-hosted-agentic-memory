@@ -1,127 +1,76 @@
 # Deploy and Host GBrain on Railway
 
-Your AI agent forgets everything the moment the conversation ends. GBrain is the memory it has been missing. It is a knowledge base your agent can search, write to and reason over, living at a URL any MCP client can reach.
+Your AI agent forgets everything the moment the conversation ends. GBrain is the memory it has been missing: a knowledge base your agent can search, write to and reason over, at a URL any MCP client can reach.
 
 ## About Hosting GBrain
 
-Most search tools hand back a list of pages and leave the reading to you. GBrain reads them and writes the answer, with citations, and it tells you what it doesn't know yet. Every page it stores is wired into a knowledge graph as you go. So a question like "what did we decide about pricing, and who was in the room?" has somewhere to land.
+Most search tools hand back a list of pages and leave the reading to you. GBrain reads them and writes the answer, with citations, and tells you what it doesn't know yet. Every page it stores is wired into a knowledge graph as you go.
 
-[GBrain](https://github.com/garrytan/gbrain) was built by Garry Tan to run his own agents. It is designed to run on your infrastructure: your database, your keys, your notes. This template is the shortest path to that. One Railway service with the database built in. No second service to deploy, no connection string to wire up, and nothing that phones home.
-
-Pick an embedding model, add your key for it, and your agent has a memory.
+[GBrain](https://github.com/garrytan/gbrain) was built by Garry Tan to run his own agents, on his own infrastructure. This template is the shortest path to that. One Railway service with the database built in. No second service, no connection string, nothing that phones home.
 
 ## Common Use Cases
 
-- **Give your coding agent real memory.** Claude Code, Cursor, Windsurf and Codex can recall architecture decisions, past debugging sessions and project context instead of starting cold every session.
-- **Keep a personal brain that answers back.** Capture notes, meetings and half-formed ideas from any device. Ask a question and get a written answer with sources.
-- **Share what your team knows.** Point everyone's agents at one brain, with scoped access so each client reaches only what it should.
+- **Give your coding agent real memory.** Claude Code, Cursor, Windsurf and Codex recall past decisions and project context instead of starting cold every session.
+- **Keep a personal brain that answers back.** Capture notes from any device, then ask a question and get a written answer with sources.
+- **Share what your team knows.** Point everyone's agents at one brain, with scoped access per client.
 
 ## Dependencies for GBrain Hosting
 
-- **An embedding API key.** OpenAI, ZeroEntropy, Voyage or Google. This is the only value you provide. The service will not start without one, because a brain built against the wrong provider breaks in confusing ways later.
+- **An embedding API key.** OpenAI, ZeroEntropy, Voyage or Google. This is the only value you provide, and the service will not start without one.
 
 ### Deployment Dependencies
 
-- [GBrain](https://github.com/garrytan/gbrain), the knowledge brain and MCP server
+- [GBrain](https://github.com/garrytan/gbrain), the brain and MCP server
 - [Model Context Protocol](https://modelcontextprotocol.io), how AI clients talk to it
 - [Railway Volumes](https://docs.railway.com/volumes), where the brain lives
 
 ### Implementation Details
 
-Deploy it, collect three values from your Railway project, connect your agent, then open your dashboard. Every step is written out below, including one section per agent. You do not need to read anything on GitHub.
-
----
+Four steps, all written out below. You do not need to read anything on GitHub.
 
 ## Step 1: Deploy
 
-Railway shows a short form before it creates anything. You only have to fill in one field.
-
-| Field | What to do |
-| ----- | ---------- |
-| `EMBEDDING_API_KEY` | Paste your key. This is the only required field. |
-| `EMBEDDING_MODEL` | Leave it, unless you use a provider other than OpenAI. |
-| `GBRAIN_HTTP_CORS_ORIGIN` | Leave it. |
-| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | Leave it. Railway generates one per deploy. |
-| `ANTHROPIC_API_KEY`, `BRAIN_REPO_URL`, `GITHUB_TOKEN` | Optional. Leave them empty. |
+Railway shows a short form first. Only one field needs you: paste your embedding API key into `EMBEDDING_API_KEY`. Leave everything else alone, including the optional variables at the bottom.
 
 Click deploy. The volume and the public domain come with the template, so there is nothing to attach or generate. The first build takes a few minutes.
 
-**Which key do I paste?** GBrain reads the provider from the part before the colon in `EMBEDDING_MODEL`.
+Using a provider other than OpenAI? Set `EMBEDDING_MODEL` to match your key:
 
-| `EMBEDDING_MODEL` | Key you paste | Dimensions |
-| ----------------- | ------------- | ---------- |
-| `openai:text-embedding-3-large` | OpenAI, starts `sk-` | 1536 |
-| `zeroentropyai:zembed-1` | ZeroEntropy, starts `ze-` | 2560 |
-| `voyage:voyage-3-large` | Voyage, starts `pa-` | 1024 |
-| `google:gemini-embedding-001` | Google AI Studio | varies |
+| EMBEDDING_MODEL | Key you paste |
+| --------------- | ------------- |
+| openai:text-embedding-3-large | OpenAI, starts sk- |
+| zeroentropyai:zembed-1 | ZeroEntropy, starts ze- |
+| voyage:voyage-3-large | Voyage, starts pa- |
+| google:gemini-embedding-001 | Google AI Studio |
 
-`openrouter` and `dashscope` work too. Local providers (`ollama`, `llama-server`, `litellm`) need no hosted key, so clear `EMBEDDING_API_KEY` after the first deploy.
+**Pick your provider before you add anything.** GBrain fixes the vector size when it creates the brain, so switching later means re-embedding everything.
 
-**Pick your provider before you add anything.** GBrain fixes the vector size when it creates the brain. Switching later means re-embedding everything.
+## Step 2: Collect Three Values
 
----
+Open your new project on [railway.com](https://railway.com) and click the **gbrain** service. All three are on that screen.
 
-## Step 2: Find Your URL, Your Token and Your Password
+**Your domain.** **Settings** tab, scroll to **Networking**. It looks like `gbrain-production-a1b2.up.railway.app`. That gives you two addresses: `/mcp` for your agent, and `/admin/` for you. Every example below says `your-app.up.railway.app`, so swap in yours.
 
-Three things live in your new Railway project, and you need all three. Open [railway.com](https://railway.com), go to your project, and click the **gbrain** service. Everything below is on that screen.
+**Your token.** **Deployments** tab, open the latest deploy and read the log. The first successful boot prints a block containing `gbrain_a1b2c3...`. Copy that value. It is printed once, so save it. If you lost it, open a Railway shell on the service and run `gbrain auth create my-laptop`.
 
-### Your URL
-
-Open the **Settings** tab, then scroll to **Networking**. Under Public Networking there is a domain that looks like `gbrain-production-a1b2.up.railway.app`. The template generates it on the first deploy, so it is already there.
-
-That domain gives you two addresses. Write them down:
-
-| Address | What it is for |
-| ------- | -------------- |
-| `https://your-domain.up.railway.app/mcp` | The address your agent connects to |
-| `https://your-domain.up.railway.app/admin/` | The dashboard you log in to yourself |
-
-Every example below says `your-app.up.railway.app`. Swap in the domain you just found.
-
-### Your token
-
-This is what your agent authenticates with. Open the **Deployments** tab, click the most recent deploy, and read the build and deploy log. Near the end of the first successful boot you will see this block:
-
-```
-======================================================================
-  CONNECT YOUR AGENT — this token is shown ONCE, right now.
-======================================================================
-  gbrain connect https://your-app.up.railway.app/mcp \
-      --token gbrain_a1b2c3... --install
-```
-
-Copy the `gbrain_...` value. That is your token, and you will paste it into whichever agent you use below.
-
-It is printed once, on the boot that created it, so save it somewhere. If you already lost it, open a Railway shell on the service (the three-dot menu on the service, then **Shell**) and run `gbrain auth create my-laptop` for a fresh one.
-
-### Your admin password
-
-This is separate from the token above, and it is the one people miss. Open the **Variables** tab on the same service and find `GBRAIN_ADMIN_BOOTSTRAP_TOKEN`. Click the eye icon to reveal it, then copy the value.
-
-That long string gets you into the dashboard. Railway generated it when you deployed, it is unique to your project, and it is deliberately kept out of the logs. There is no username to go with it.
-
-Once an agent is connected you can skip it and just ask the agent for a login link instead. Step 4 covers both ways.
-
----
+**Your admin password.** **Variables** tab, find `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` and click the eye icon to reveal it. This is a different value from the token above, and it is the one people mix up.
 
 ## Step 3: Connect Your Agent
 
-Find yours below. Each one is complete on its own.
+Find yours. Each section stands alone.
 
 ### Claude Code
-
-One command:
 
 ```bash
 claude mcp add --transport http gbrain https://your-app.up.railway.app/mcp \
   --header "Authorization: Bearer gbrain_a1b2c3..."
 ```
 
-Check it landed with `claude mcp list`.
+Check it with `claude mcp list`.
 
 ### Cursor
 
-Create or edit `~/.cursor/mcp.json`:
+Put this in `~/.cursor/mcp.json`, set `GBRAIN_TOKEN` in your environment, then turn the server on under **Customize** in the sidebar.
 
 ```json
 {
@@ -134,13 +83,9 @@ Create or edit `~/.cursor/mcp.json`:
 }
 ```
 
-Set `GBRAIN_TOKEN` in your environment to the token from Step 2. Then open **Customize** in the Cursor sidebar and turn the server on.
-
-Use `.cursor/mcp.json` inside a project instead if you only want it there.
-
 ### Windsurf
 
-Create or edit `~/.codeium/windsurf/mcp_config.json`:
+Put this in `~/.codeium/windsurf/mcp_config.json`, set `GBRAIN_TOKEN`, then restart Windsurf.
 
 ```json
 {
@@ -153,11 +98,9 @@ Create or edit `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
-Set `GBRAIN_TOKEN` in your environment to the token from Step 2, then restart Windsurf.
-
 ### Codex
 
-Add this to `~/.codex/config.toml`:
+Put this in `~/.codex/config.toml`, export `GBRAIN_TOKEN`, then restart Codex. Check it with `codex mcp list`.
 
 ```toml
 [mcp_servers.gbrain]
@@ -165,123 +108,66 @@ url = "https://your-app.up.railway.app/mcp"
 bearer_token_env_var = "GBRAIN_TOKEN"
 ```
 
-Export the token, then restart Codex:
-
-```bash
-export GBRAIN_TOKEN=gbrain_a1b2c3...
-```
-
-Check it with `codex mcp list`.
-
 ### Claude Desktop
 
-1. Open **Settings > Integrations**.
-2. Add an integration with the URL `https://your-app.up.railway.app/mcp`.
-3. Set authentication to bearer token and paste your token from Step 2.
-4. Save.
+**Settings > Integrations**, add an integration with your `/mcp` URL, set authentication to bearer token and paste your token.
 
 ### Claude Cowork
 
-For a team plan, an Organization Owner does this once:
-
-1. Open **Organization Settings > Connectors**.
-2. Create a connector with the URL `https://your-app.up.railway.app/mcp`.
-3. Under Advanced Settings, choose bearer token authentication and paste your token.
-4. Save.
+An Organization Owner does this once: **Organization Settings > Connectors**, create a connector with your `/mcp` URL, then set bearer token authentication under Advanced Settings.
 
 ### ChatGPT
 
-ChatGPT signs in through OAuth, so it needs a client registered first.
+ChatGPT signs in through OAuth, so register a client first.
 
-1. Open `https://your-app.up.railway.app/admin/` in a browser, trailing slash included. Click **Or paste bootstrap token manually**, paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2, and submit. The agent login link will not help here, because nothing is connected yet.
-2. Click **Register client**. Name it `chatgpt`, set the grant type to `authorization_code`, and tick the `read` and `write` scopes. Leave `admin` unchecked.
-3. For the redirect URI, copy the one ChatGPT shows on its own connector setup screen.
-4. Click **Register**, then copy the `client_id` from the popup. There is no client secret for this type of client.
-5. In ChatGPT, open **Settings > Connectors** and click **Add connector**.
-6. Enter `https://your-app.up.railway.app/mcp` as the server URL, paste the client ID, and click **Connect**.
-7. Approve the consent screen ChatGPT opens.
+1. Open `https://your-app.up.railway.app/admin/` and click **Or paste bootstrap token manually**. Paste your `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` and submit.
+2. Click **Register client**. Name it `chatgpt`, grant type `authorization_code`, scopes `read` and `write`. Leave `admin` unchecked.
+3. For the redirect URI, copy the one ChatGPT shows on its connector setup screen.
+4. Register, then copy the `client_id`. There is no client secret for this type.
+5. In ChatGPT: **Settings > Connectors > Add connector**. Enter your `/mcp` URL and the client ID, click **Connect**, then approve the consent screen.
 
 ### Perplexity
 
-Needs a Pro subscription, and a client registered first.
+Needs Pro, and a client registered first.
 
-1. Open `https://your-app.up.railway.app/admin/` in a browser, trailing slash included. Click **Or paste bootstrap token manually**, paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2, and submit. The agent login link will not help here, because nothing is connected yet.
-2. Click **Register client**. Name it `perplexity`, set the grant type to `client_credentials`, and tick the `read` and `write` scopes.
-3. Click **Register**, then copy both the `client_id` and the `client_secret`. They are shown once.
-4. In Perplexity, open **Settings > Connectors**.
-5. Add a remote connector with the URL `https://your-app.up.railway.app/mcp`.
-6. Choose OAuth client credentials, paste the client ID and secret, and save.
+1. Open `https://your-app.up.railway.app/admin/` and click **Or paste bootstrap token manually**. Paste your `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` and submit.
+2. Click **Register client**. Name it `perplexity`, grant type `client_credentials`, scopes `read` and `write`.
+3. Register, then copy both the `client_id` and `client_secret`. They show once.
+4. In Perplexity: **Settings > Connectors**. Add a remote connector with your `/mcp` URL, choose OAuth client credentials, paste both values and save.
 
 ### Check it worked
 
-Ask your agent to remember something. Start a new chat and ask for it back. If it answers, the brain is wired up.
-
----
+Ask your agent to remember something. Start a new chat and ask for it back.
 
 ## Step 4: Use the Dashboard
 
-The dashboard is a web page served by your own deployment. It is not part of Railway, and it is not a separate app to install. It lives at your domain with `/admin/` on the end.
-
-Open `https://your-app.up.railway.app/admin/` in any browser, using the domain you found in Step 2.
+The dashboard is a page served by your own deployment, not by Railway. Open `https://your-app.up.railway.app/admin/` in any browser.
 
 > **Keep the trailing slash.** `/admin/` works. `/admin` does not load properly.
 
-You will see a screen saying **This is a protected dashboard**. There are two ways past it.
+You get a screen saying **This is a protected dashboard**, with two ways past it.
 
-**If you already connected an agent in Step 3**, just ask it:
+**With an agent already connected**, ask it: `Give me the GBrain admin login link`. It returns a link that works once. Ask again next time.
 
-```
-Give me the GBrain admin login link
-```
+**With nothing connected yet**, click **Or paste bootstrap token manually**, paste your `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` into the **Admin Token** box and hit **Submit**. This is the route to use when setting up ChatGPT or Perplexity.
 
-It hands back a link. Open the link and you are in. Each one works once, so ask again whenever you need to get back in.
-
-**If no agent is connected yet**, or you would rather not ask, click **Or paste bootstrap token manually** at the bottom of that screen. Paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2 into the **Admin Token** box and hit **Submit**.
-
-Setting up ChatGPT or Perplexity is the case where nothing is connected yet, so use the manual route there.
-
-Three things live inside:
-
-- **Register a client.** Give it a name, tick the scopes it needs, and pick a grant type. Use `client_credentials` for machine access and `authorization_code` for browser sign-in. Credentials are shown once, so copy them straight away.
-- **Live activity.** A running feed of what your connected agents are doing.
-- **Request logs.** What was called and when. Parameters are redacted by default.
-
----
+Inside you can register clients with the scopes and grant type you choose, watch a live feed of what your agents are doing, and read request logs. Parameters are redacted by default.
 
 ## If Something Goes Wrong
 
 **Deploy fails with "No embedding provider configured".** `EMBEDDING_API_KEY` is empty. Set it in Variables and redeploy.
 
-**Your agent gets a 401.** The token was rotated, or the brain was recreated. Open a Railway shell and run `gbrain auth create my-laptop` for a new one.
+**Your agent gets a 401.** The token was rotated or the brain was recreated. Run `gbrain auth create my-laptop` from a Railway shell.
 
-**The dashboard rejects your token.** You are probably pasting the connect token from the deploy logs. Those are two different values. The manual box wants `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` from the **Variables** tab, which does not start with `gbrain_`.
+**The dashboard rejects your token.** You are pasting the connect token from the logs. The manual box wants `GBRAIN_ADMIN_BOOTSTRAP_TOKEN`, which does not start with `gbrain_`.
 
-**The dashboard looks broken, or the styling is missing.** Check the trailing slash. It has to be `/admin/`, not `/admin`.
+**The dashboard looks broken.** Check the trailing slash.
 
-**Your agent cannot produce a login link.** Its token needs admin scope. Use **Or paste bootstrap token manually** instead, then register a client with the scopes you want from inside the dashboard.
+**A login link says it is invalid.** They are single-use. Ask for a new one.
 
-**A login link says it is invalid.** They are single-use. Ask your agent for a new one each time.
+**Claude Desktop, Cowork, ChatGPT or Perplexity will not connect.** These sign in through a browser, so their origin must be allowed. `GBRAIN_HTTP_CORS_ORIGIN` ships set to `https://claude.ai,https://chatgpt.com`. Add to that list rather than replacing it, and never use `*`.
 
-**`/admin/` does not load at all.** Check **Settings > Networking** on the service. If there is no public domain, generate one and redeploy.
-
-**Claude Desktop, Cowork, ChatGPT or Perplexity will not connect.** These sign in through a browser, so their origin has to be allowed. The template ships `GBRAIN_HTTP_CORS_ORIGIN` set to `https://claude.ai,https://chatgpt.com`. Add your client's origin to that list rather than replacing it, and never set it to `*`.
-
-**Search returns nothing after an import.** The embedding key is wrong or missing. Open a Railway shell and run `gbrain doctor`. It prints the exact fix.
-
-**You see `expected N dimensions, not M`.** The brain was built with a different embedding provider than the one configured now. `gbrain doctor` prints the fix.
-
----
-
-## What You Get
-
-- **A brain over MCP.** 30+ tools at `/mcp`, with OAuth 2.1 and scoped access
-- **No database to run.** PGLite (Postgres compiled to WebAssembly) rides along inside the service
-- **Answers, not just results.** Hybrid search across vectors, keywords and a self-building knowledge graph
-- **An admin dashboard.** Live activity, connected clients and request logs
-- **Storage that survives.** Brain, config and tokens persist across redeploys, with Railway backups a click away
-- **A pinned release.** The image ships a known-good GBrain version, so redeploying never changes behavior underneath you
-
-Comfortable at the scale of a personal or small-team brain, roughly tens of thousands of pages. Beyond that, point it at Postgres with pgvector instead.
+**Search returns nothing after an import.** The embedding key is wrong. Run `gbrain doctor` from a Railway shell for the exact fix.
 
 ## Why Deploy GBrain on Railway?
 
@@ -289,6 +175,4 @@ Railway is a singular platform to deploy your infrastructure stack. Railway will
 
 By deploying GBrain on Railway, you are one step closer to supporting a complete full-stack application with minimal burden. Host your servers, databases, AI agents, and more on Railway.
 
----
-
-<sub>A community-maintained deployment template, not affiliated with or officially supported by the GBrain project. GBrain is built by Garry Tan and licensed MIT. All trademarks belong to their respective owners.</sub>
+<sub>A community-maintained template, not affiliated with or officially supported by the GBrain project. GBrain is built by Garry Tan and licensed MIT.</sub>
