@@ -74,7 +74,7 @@ That domain gives you two addresses. Write them down:
 | Address | What it is for |
 | ------- | -------------- |
 | `https://your-domain.up.railway.app/mcp` | The address your agent connects to |
-| `https://your-domain.up.railway.app/admin` | The dashboard you log in to yourself |
+| `https://your-domain.up.railway.app/admin/` | The dashboard you log in to yourself |
 
 Every example below says `your-app.up.railway.app`. Swap in the domain you just found.
 
@@ -98,7 +98,9 @@ It is printed once, on the boot that created it, so save it somewhere. If you al
 
 This is separate from the token above, and it is the one people miss. Open the **Variables** tab on the same service and find `GBRAIN_ADMIN_BOOTSTRAP_TOKEN`. Click the eye icon to reveal it, then copy the value.
 
-That long string is your password for the dashboard. Railway generated it when you deployed, it is unique to your project, and it is deliberately kept out of the logs. There is no username.
+That long string gets you into the dashboard. Railway generated it when you deployed, it is unique to your project, and it is deliberately kept out of the logs. There is no username to go with it.
+
+Once an agent is connected you can skip it and just ask the agent for a login link instead. Step 4 covers both ways.
 
 ---
 
@@ -191,7 +193,7 @@ For a team plan, an Organization Owner does this once:
 
 ChatGPT signs in through OAuth, so it needs a client registered first.
 
-1. Open your dashboard at `https://your-app.up.railway.app/admin` in a browser. Paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2 to log in. There is no username.
+1. Open `https://your-app.up.railway.app/admin/` in a browser, trailing slash included. Click **Or paste bootstrap token manually**, paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2, and submit. The agent login link will not help here, because nothing is connected yet.
 2. Click **Register client**. Name it `chatgpt`, set the grant type to `authorization_code`, and tick the `read` and `write` scopes. Leave `admin` unchecked.
 3. For the redirect URI, copy the one ChatGPT shows on its own connector setup screen.
 4. Click **Register**, then copy the `client_id` from the popup. There is no client secret for this type of client.
@@ -203,7 +205,7 @@ ChatGPT signs in through OAuth, so it needs a client registered first.
 
 Needs a Pro subscription, and a client registered first.
 
-1. Open your dashboard at `https://your-app.up.railway.app/admin` in a browser. Paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2 to log in. There is no username.
+1. Open `https://your-app.up.railway.app/admin/` in a browser, trailing slash included. Click **Or paste bootstrap token manually**, paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2, and submit. The agent login link will not help here, because nothing is connected yet.
 2. Click **Register client**. Name it `perplexity`, set the grant type to `client_credentials`, and tick the `read` and `write` scopes.
 3. Click **Register**, then copy both the `client_id` and the `client_secret`. They are shown once.
 4. In Perplexity, open **Settings > Connectors**.
@@ -218,15 +220,27 @@ Ask your agent to remember something. Start a new chat and ask for it back. If i
 
 ## Step 4: Use the Dashboard
 
-The dashboard is a web page served by your own deployment. It is not part of Railway, and it is not a separate app to install. It lives at your domain with `/admin` on the end.
+The dashboard is a web page served by your own deployment. It is not part of Railway, and it is not a separate app to install. It lives at your domain with `/admin/` on the end.
 
-1. Open `https://your-app.up.railway.app/admin` in any browser, using the domain you found in Step 2.
-2. You get a single box asking for a token. There is no username.
-3. Paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from your service **Variables** tab, and log in.
+Open `https://your-app.up.railway.app/admin/` in any browser, using the domain you found in Step 2.
 
-If the page will not load at all, check **Settings > Networking** on the service. A domain has to exist for anything to answer.
+> **Keep the trailing slash.** `/admin/` works. `/admin` does not load properly.
 
-Three things live there:
+You will see a screen saying **This is a protected dashboard**. There are two ways past it.
+
+**If you already connected an agent in Step 3**, just ask it:
+
+```
+Give me the GBrain admin login link
+```
+
+It hands back a link. Open the link and you are in. Each one works once, so ask again whenever you need to get back in.
+
+**If no agent is connected yet**, or you would rather not ask, click **Or paste bootstrap token manually** at the bottom of that screen. Paste the `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` value from Step 2 into the **Admin Token** box and hit **Submit**.
+
+Setting up ChatGPT or Perplexity is the case where nothing is connected yet, so use the manual route there.
+
+Three things live inside:
 
 - **Register a client.** Give it a name, tick the scopes it needs, and pick a grant type. Use `client_credentials` for machine access and `authorization_code` for browser sign-in. Credentials are shown once, so copy them straight away.
 - **Live activity.** A running feed of what your connected agents are doing.
@@ -240,9 +254,15 @@ Three things live there:
 
 **Your agent gets a 401.** The token was rotated, or the brain was recreated. Open a Railway shell and run `gbrain auth create my-laptop` for a new one.
 
-**The dashboard rejects your password.** You are probably pasting the connect token from the deploy logs. Those are two different values. The dashboard wants `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` from the **Variables** tab, and it starts with neither `gbrain_` nor anything else recognisable.
+**The dashboard rejects your token.** You are probably pasting the connect token from the deploy logs. Those are two different values. The manual box wants `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` from the **Variables** tab, which does not start with `gbrain_`.
 
-**`/admin` does not load at all.** Check **Settings > Networking** on the service. If there is no public domain, generate one and redeploy.
+**The dashboard looks broken, or the styling is missing.** Check the trailing slash. It has to be `/admin/`, not `/admin`.
+
+**Your agent cannot produce a login link.** Its token needs admin scope. Use **Or paste bootstrap token manually** instead, then register a client with the scopes you want from inside the dashboard.
+
+**A login link says it is invalid.** They are single-use. Ask your agent for a new one each time.
+
+**`/admin/` does not load at all.** Check **Settings > Networking** on the service. If there is no public domain, generate one and redeploy.
 
 **Claude Desktop, Cowork, ChatGPT or Perplexity will not connect.** These sign in through a browser, so their origin has to be allowed. The template ships `GBRAIN_HTTP_CORS_ORIGIN` set to `https://claude.ai,https://chatgpt.com`. Add your client's origin to that list rather than replacing it, and never set it to `*`.
 

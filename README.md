@@ -55,7 +55,7 @@ template.
 | `ZEROENTROPY_API_KEY` | No | none | Shorthand for `zeroentropyai:zembed-1`. |
 | `VOYAGE_API_KEY` | No | none | Shorthand for `voyage:voyage-3-large`. |
 | `ANTHROPIC_API_KEY` | No | none | Needed for `think` synthesis and enrichment. |
-| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No | generated | The `/admin` password. Min 32 chars, `[A-Za-z0-9_-]`. |
+| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | No | generated | Manual login for `/admin/`. Min 32 chars, `[A-Za-z0-9_-]`. |
 | `GBRAIN_SKIP_CONNECT_TOKEN` | No | off | Set to `1` to mint and print no token. Use `/admin` instead. |
 | `GBRAIN_HTTP_CORS_ORIGIN` | No | set by template | Browser origins allowed through OAuth. Add to the list, never use `*`. |
 | `BRAIN_REPO_URL` | No | none | Git URL to mirror the brain's markdown into. |
@@ -72,7 +72,7 @@ Build time only: `GBRAIN_VERSION` pins the GBrain release, currently `v0.42.74.0
 
 ## Security
 
-- **Everything that matters needs auth.** `/mcp` wants a bearer or OAuth token. `/admin` wants the bootstrap token. Only `/health` is open.
+- **Everything that matters needs auth.** `/mcp` wants a bearer or OAuth token. `/admin/` wants the bootstrap token, or a single-use login link issued to a connected agent. Only `/health` is open.
 - **Every operation is scoped** `read`, `write` or `admin`. Register clients with the least they need.
 - **Filesystem tools are blocked over HTTP.** `sync_brain`, `file_upload`, `file_list` and `file_url` are refused whatever the scope.
 - **Tokens are hashed at rest**, and stored at mode `600` on the volume.
