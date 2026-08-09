@@ -23,129 +23,25 @@ Your AI agent forgets everything when the chat ends. This template gives it a me
 
 ## Setup
 
-Three steps. Deploy it, connect your agent, then open the dashboard.
+The full guide lives on the Railway template page, with a section for every
+supported agent:
 
-### 1. Deploy on Railway
+**<https://railway.com/deploy/SQ3-sz>**
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/SQ3-sz?referralCode=fhlcDU&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
-Railway shows a short form first. You only have to fill in one field.
+In short: deploy the template with your embedding API key, copy the token
+printed in the deploy logs, then point your agent at
+`https://your-app.up.railway.app/mcp` using that token as a bearer header.
+Claude Code, Cursor, Windsurf, Codex, Claude Desktop, Claude Cowork, ChatGPT
+and Perplexity each have their own steps on that page, along with how to reach
+the `/admin` dashboard.
 
-| Field | What to do |
-| ----- | ---------- |
-| `EMBEDDING_API_KEY` | Paste your key. This is the only required field. |
-| `EMBEDDING_MODEL` | Leave it, unless you use a provider other than OpenAI. |
-| `GBRAIN_HTTP_CORS_ORIGIN` | Leave it. |
-| `GBRAIN_ADMIN_BOOTSTRAP_TOKEN` | Leave it. Railway generates one per deploy. |
-| `ANTHROPIC_API_KEY`, `BRAIN_REPO_URL`, `GITHUB_TOKEN` | Optional. Leave them empty. |
+That page is written in [docs/railway-template-description.md](docs/railway-template-description.md).
+Edit it there, then paste it into the Railway template composer.
 
-Click deploy. The volume and the public domain come with the template, so there is nothing to attach or generate. The first build takes a few minutes.
-
-**Which key do I paste?** GBrain reads the provider from the part before the colon in `EMBEDDING_MODEL`.
-
-| `EMBEDDING_MODEL` | Key you paste | Dimensions |
-| ----------------- | ------------- | ---------- |
-| `openai:text-embedding-3-large` | OpenAI, starts `sk-` | 1536 |
-| `zeroentropyai:zembed-1` | ZeroEntropy, starts `ze-` | 2560 |
-| `voyage:voyage-3-large` | Voyage, starts `pa-` | 1024 |
-| `google:gemini-embedding-001` | Google AI Studio | varies |
-
-`openrouter` and `dashscope` work too. Local providers (`ollama`, `llama-server`, `litellm`) need no hosted key, so clear `EMBEDDING_API_KEY` after the first deploy.
-
-> **Pick your provider before you add anything.** GBrain fixes the vector size
-> when it creates the brain. Switching later means re-embedding everything.
-
-### 2. Connect Your Agent
-
-Open the **Deploy Logs** and find this block from the first boot:
-
-```
-======================================================================
-  CONNECT YOUR AGENT — this token is shown ONCE, right now.
-======================================================================
-  gbrain connect https://your-app.up.railway.app/mcp \
-      --token gbrain_a1b2c3... --install
-```
-
-Copy the `gbrain_...` value. That is your token. It is printed once, on the boot that created it. If you miss it, mint a new one from a Railway shell with `gbrain auth create my-laptop`.
-
-Now pick your agent. Replace the URL and the token in each example.
-
-**Claude Code**
-
-```bash
-claude mcp add --transport http gbrain https://your-app.up.railway.app/mcp \
-  --header "Authorization: Bearer gbrain_a1b2c3..."
-```
-
-**Cursor**
-
-Put this in `~/.cursor/mcp.json`, then turn the server on under **Customize** in the sidebar.
-
-```json
-{
-  "mcpServers": {
-    "gbrain": {
-      "url": "https://your-app.up.railway.app/mcp",
-      "headers": { "Authorization": "Bearer ${env:GBRAIN_TOKEN}" }
-    }
-  }
-}
-```
-
-**Windsurf**
-
-Put this in `~/.codeium/windsurf/mcp_config.json`.
-
-```json
-{
-  "mcpServers": {
-    "gbrain": {
-      "serverUrl": "https://your-app.up.railway.app/mcp",
-      "headers": { "Authorization": "Bearer ${env:GBRAIN_TOKEN}" }
-    }
-  }
-}
-```
-
-**Codex**
-
-Put this in `~/.codex/config.toml`, export `GBRAIN_TOKEN`, then restart Codex. Check it with `codex mcp list`.
-
-```toml
-[mcp_servers.gbrain]
-url = "https://your-app.up.railway.app/mcp"
-bearer_token_env_var = "GBRAIN_TOKEN"
-```
-
-**Claude Desktop and Claude Cowork**
-
-Desktop: **Settings > Integrations**, add the `/mcp` URL, set authentication to bearer token and paste yours. Cowork: **Organization Settings > Connectors**, same URL, bearer token under Advanced Settings.
-
-**ChatGPT**
-
-1. In `/admin`, click **Register client**. Name it `chatgpt`, grant type `authorization_code`, scopes `read` and `write`. Leave `admin` unchecked.
-2. For the redirect URI, copy the one ChatGPT shows on its connector screen.
-3. Save the `client_id` from the modal. There is no client secret.
-4. In ChatGPT: **Settings > Connectors > Add connector**. Paste the `/mcp` URL and the client ID, then click **Connect**.
-
-**Perplexity** (Pro required)
-
-1. In `/admin`, click **Register client**. Name it `perplexity`, grant type `client_credentials`, scopes `read` and `write`.
-2. Copy the `client_id` and `client_secret` from the modal. They show once.
-3. In Perplexity: **Settings > Connectors**. Add a remote connector with the `/mcp` URL, choose OAuth client credentials, paste both values and save.
-
-**Check it works.** Ask your agent to remember something, then start a new chat and ask for it back. If it answers, the brain is wired up.
-
-### 3. Use the Admin Dashboard
-
-Go to `https://your-app.up.railway.app/admin`. The password is `GBRAIN_ADMIN_BOOTSTRAP_TOKEN`, which you read from the service **Variables** tab in Railway. It is not printed in the logs.
-
-You can do three things there:
-
-- **Register a client.** Give it a name, tick the scopes it needs, pick a grant type. `client_credentials` for machine access, `authorization_code` for browser sign-in. Credentials appear once, so copy them.
-- **Watch live activity.** A running feed of what your agents are doing.
-- **Read request logs.** Parameters are redacted by default.
+The rest of this file is reference material for running and modifying the
+template.
 
 ---
 
