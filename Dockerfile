@@ -98,8 +98,10 @@ EXPOSE 8080
 
 # GBrain's own /health handler budgets 3s so it can answer before an
 # orchestrator's 5s deadline; give it that plus framing headroom.
+# The shell is spelled out rather than left implicit: the probe needs ${PORT}
+# expanded at runtime, plus the redirect and the exit-code fallback.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD curl -fsS "http://127.0.0.1:${PORT}/health" >/dev/null || exit 1
+    CMD ["/bin/sh", "-c", "curl -fsS http://127.0.0.1:${PORT}/health >/dev/null || exit 1"]
 
 # tini reaps zombies and forwards SIGTERM, so Railway's graceful shutdown
 # reaches the server instead of being swallowed by the shell.
