@@ -3,7 +3,7 @@
 docs
 *.md
 LICENSE
-icon.svg
+assets
 .hadolint.yaml
 .gitattributes
 .gitignore
